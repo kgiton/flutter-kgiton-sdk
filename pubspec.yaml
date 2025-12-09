@@ -1,0 +1,45 @@
+name: kgiton_sdk
+description: KGiTON SDK - Flutter package untuk integrasi timbangan dan API backend dengan session-based cart & payment system
+version: 1.0.0
+homepage: https://github.com/kgiton/flutter-kgiton-sdk
+repository: https://github.com/kgiton/flutter-kgiton-sdk
+issue_tracker: https://github.com/kgiton/flutter-kgiton-sdk/issues
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # BLE Communication
+  kgiton_ble_sdk:
+    git:
+      url: https://github.com/kuldii/flutter-ble-sdk.git
+  
+  # HTTP Client
+  http: ^1.2.0
+  
+  # Logging
+  logger: ^2.5.0
+  
+  # Utilities
+  meta: ^1.15.0
+  
+  # Local Storage
+  shared_preferences: ^2.3.4
+  
+  # Permissions
+  permission_handler: ^11.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+# Package configuration
+flutter:
+  # This package is a plugin package (not a full app)
+  # It does not contain any UI
