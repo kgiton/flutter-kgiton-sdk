@@ -208,7 +208,7 @@ While we don't offer a bug bounty program, we:
 ### General Support
 
 📧 **Email:** support@kgiton.com  
-🌐 **Website:** https://kgiton.com
+🌐 **Website:** https://www.kgiton.com
 
 ### Emergency Contact (Enterprise License Only)
 

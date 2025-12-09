@@ -425,7 +425,7 @@ For authorized users:
 - 🐛 [Report Issues](https://github.com/kgiton/flutter-kgiton-sdk/issues)
 - 📧 Technical Support: support@kgiton.com
 - 🔒 Security Issues: support@kgiton.com
-- 🌐 Website: https://kgiton.com
+- 🌐 Website: https://www.kgiton.com
 
 ## License
 
@@ -457,7 +457,7 @@ See [LICENSE](LICENSE) file for complete terms and conditions.
 
 **Contact Information**:
 - 📧 Email: support@kgiton.com
-- 🌐 Website: https://kgiton.com
+- 🌐 Website: https://www.kgiton.com
 - 🔒 Security: support@kgiton.com
 
 ---

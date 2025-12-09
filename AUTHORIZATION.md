@@ -184,7 +184,7 @@ Weekends & Holidays: Email only (next business day response)
 
 To verify a license:
 
-1. Visit: https://kgiton.com/verify-license
+1. Visit: https://www.kgiton.com/verify-license
 2. Enter your License ID
 ## Frequently Asked Questions
 
@@ -220,7 +220,7 @@ A: Yes, we offer special pricing for:
 ### Contact Information
 
 📧 **Email:** support@kgiton.com  
-🌐 **Website:** https://kgiton.com  
+🌐 **Website:** https://www.kgiton.com  
 💼 **Company:** PT KGiTON  
 
 ### Next Steps
@@ -301,4 +301,4 @@ For complete legal terms, see [LICENSE](LICENSE) file.
 
 **Ready to get started?**  
 📧 Contact us: support@kgiton.com  
-🌐 Visit: https://kgiton.com
+🌐 Visit: https://www.kgiton.com
