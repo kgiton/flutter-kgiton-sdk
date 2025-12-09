@@ -88,11 +88,20 @@ class CreateItemRequest {
   final String name;
   final String unit;
   final double price;
+  final double? pricePerPcs;
+  final String? description;
 
-  CreateItemRequest({required this.licenseKey, required this.name, required this.unit, required this.price});
+  CreateItemRequest({required this.licenseKey, required this.name, required this.unit, required this.price, this.pricePerPcs, this.description});
 
   Map<String, dynamic> toJson() {
-    return {'license_key': licenseKey, 'name': name, 'unit': unit, 'price': price};
+    return {
+      'license_key': licenseKey,
+      'name': name,
+      'unit': unit,
+      'price': price,
+      if (pricePerPcs != null) 'price_per_pcs': pricePerPcs,
+      if (description != null) 'description': description,
+    };
   }
 }
 
@@ -101,10 +110,18 @@ class UpdateItemRequest {
   final String? name;
   final String? unit;
   final double? price;
+  final double? pricePerPcs;
+  final String? description;
 
-  UpdateItemRequest({this.name, this.unit, this.price});
+  UpdateItemRequest({this.name, this.unit, this.price, this.pricePerPcs, this.description});
 
   Map<String, dynamic> toJson() {
-    return {if (name != null) 'name': name, if (unit != null) 'unit': unit, if (price != null) 'price': price};
+    return {
+      if (name != null) 'name': name,
+      if (unit != null) 'unit': unit,
+      if (price != null) 'price': price,
+      if (pricePerPcs != null) 'price_per_pcs': pricePerPcs,
+      if (description != null) 'description': description,
+    };
   }
 }

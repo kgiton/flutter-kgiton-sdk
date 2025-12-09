@@ -82,8 +82,22 @@ class KgitonOwnerService {
   /// - [KgitonValidationException] if validation fails
   /// - [KgitonNotFoundException] if license not found
   /// - [KgitonApiException] for other errors
-  Future<Item> createItem({required String licenseKey, required String name, required String unit, required double price}) async {
-    final request = CreateItemRequest(licenseKey: licenseKey, name: name, unit: unit, price: price);
+  Future<Item> createItem({
+    required String licenseKey,
+    required String name,
+    required String unit,
+    required double price,
+    double? pricePerPcs,
+    String? description,
+  }) async {
+    final request = CreateItemRequest(
+      licenseKey: licenseKey,
+      name: name,
+      unit: unit,
+      price: price,
+      pricePerPcs: pricePerPcs,
+      description: description,
+    );
 
     final response = await _client.post<Item>(
       KgitonApiEndpoints.createItem,
@@ -178,6 +192,8 @@ class KgitonOwnerService {
   /// [name] - New item name (optional)
   /// [unit] - New unit of measurement (optional)
   /// [price] - New price (optional)
+  /// [pricePerPcs] - New price per piece (optional)
+  /// [description] - New description (optional)
   ///
   /// Returns the updated [Item]
   ///
@@ -186,8 +202,8 @@ class KgitonOwnerService {
   /// - [KgitonNotFoundException] if item not found
   /// - [KgitonAuthorizationException] if item doesn't belong to owner
   /// - [KgitonApiException] for other errors
-  Future<Item> updateItem({required String itemId, String? name, String? unit, double? price}) async {
-    final request = UpdateItemRequest(name: name, unit: unit, price: price);
+  Future<Item> updateItem({required String itemId, String? name, String? unit, double? price, double? pricePerPcs, String? description}) async {
+    final request = UpdateItemRequest(name: name, unit: unit, price: price, pricePerPcs: pricePerPcs, description: description);
 
     final response = await _client.put<Item>(
       KgitonApiEndpoints.updateItem(itemId),
