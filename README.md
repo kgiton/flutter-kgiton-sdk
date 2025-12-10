@@ -17,7 +17,9 @@ Official Flutter SDK for integrating with KGiTON scale devices and backend API.
 - ✅ **Real-time Weight Data**: Stream weight measurements at ~10 Hz with automatic formatting
 - ✅ **License Authentication**: Secure device authentication with license key validation
 - ✅ **REST API Client**: Complete backend integration for cart, transactions, and items
-- ✅ **Dual Pricing System**: Support per kg, per pcs, or both simultaneously (v1.2.0+)
+- ✅ **Dual Pricing System**: Support per kg, per pcs, or both simultaneously (v1.2.1+ - Fully Working)
+- ✅ **Bluetooth Auto-Recovery**: Automatic retry when Bluetooth is enabled (v1.2.2+)
+- ✅ **Helper Classes**: Simplified wrappers for auth, cart, and license operations (v1.3.0+)
 - ✅ **Smart Scanning**: Auto-stop scan when device found (battery efficient)
 - ✅ **Cross-Platform**: iOS and Android support with platform-specific optimizations
 - ✅ **Type-Safe**: Comprehensive error handling and type-safe models
@@ -332,6 +334,101 @@ print('Total Revenue: Rp ${stats.successAmount}');
 // Cancel transaction
 await apiService.transaction.cancelTransaction(transactionId);
 ```
+
+### ⭐ Simplified Usage with Helper Classes (v1.3.0+)
+
+The SDK now includes helper classes that reduce boilerplate code significantly:
+
+#### Authentication Helper
+
+```dart
+import 'package:kgiton_sdk/kgiton_sdk.dart';
+
+final authHelper = KgitonAuthHelper(baseUrl: 'https://api.example.com');
+
+// Login (automatically saves tokens)
+final result = await authHelper.login(
+  email: 'owner@example.com',
+  password: 'password123',
+);
+
+if (result['success']) {
+  print('Welcome, ${result['data']['user']['name']}!');
+} else {
+  print('Error: ${result['message']}');
+}
+
+// Get authenticated API service (tokens injected automatically)
+final apiService = await authHelper.getAuthenticatedApiService();
+if (apiService != null) {
+  // Use apiService for API calls
+}
+
+// Logout (clears stored tokens)
+await authHelper.logout();
+```
+
+#### Cart Helper
+
+```dart
+final cartHelper = KgitonCartHelper(apiService);
+final cartId = 'device-12345';
+
+// Add item (consistent return format)
+final result = await cartHelper.addItem(
+  cartId: cartId,
+  licenseKey: 'YOUR-LICENSE-KEY',
+  itemId: 'apple-id',
+  quantity: 1.5,
+);
+
+if (result['success']) {
+  print('Item added!');
+}
+
+// Get cart summary
+final summary = await cartHelper.getSummary(cartId);
+if (summary['success']) {
+  final data = summary['data'];
+  print('Total: ${data['totalItems']} items');
+  print('Amount: Rp ${data['totalAmount']}');
+}
+
+// Checkout
+final checkout = await cartHelper.checkout(
+  cartId: cartId,
+  paymentMethod: PaymentMethod.qris,
+  notes: 'Purchase',
+);
+```
+
+#### License Helper
+
+```dart
+final licenseHelper = KgitonLicenseHelper(apiService);
+
+// Get all licenses
+final result = await licenseHelper.getMyLicenses();
+if (result['success']) {
+  List licenses = result['data'];
+  print('You have ${licenses.length} licenses');
+}
+
+// Validate license
+final validation = await licenseHelper.validateLicense('YOUR-LICENSE-KEY');
+if (validation['success'] && validation['data']['isValid']) {
+  print('License is valid!');
+}
+```
+
+**Benefits:**
+- 70% less boilerplate code in your application
+- Consistent return format: `{success: bool, message: String, data: dynamic}`
+- Built-in error handling
+- Automatic token management (auth helper)
+- Simpler API surface for common operations
+
+For migration examples, see [CHANGELOG.md](CHANGELOG.md#v130).
 
 ## API Reference
 

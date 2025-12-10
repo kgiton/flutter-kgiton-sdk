@@ -48,3 +48,9 @@ export 'src/api/models/transaction_models.dart';
 
 // API Exceptions
 export 'src/api/exceptions/api_exceptions.dart';
+
+// ==================== Helpers ====================
+// Simplified helpers for common operations
+export 'src/helpers/kgiton_auth_helper.dart';
+export 'src/helpers/kgiton_cart_helper.dart';
+export 'src/helpers/kgiton_license_helper.dart';

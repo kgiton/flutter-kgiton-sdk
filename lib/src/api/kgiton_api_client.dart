@@ -116,38 +116,69 @@ class KgitonApiClient {
 
   /// Handle HTTP response
   ApiResponse<T> _handleResponse<T>(http.Response response, T Function(dynamic)? fromJsonT) {
-    final Map<String, dynamic> jsonBody;
-
-    try {
-      jsonBody = json.decode(response.body) as Map<String, dynamic>;
-    } catch (e) {
-      throw KgitonApiException(message: 'Invalid JSON response', statusCode: response.statusCode);
-    }
-
-    // Handle success responses
+    // Handle success responses first
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      final Map<String, dynamic> jsonBody;
+
+      try {
+        jsonBody = json.decode(response.body) as Map<String, dynamic>;
+      } catch (e) {
+        throw KgitonApiException(message: 'Invalid JSON response from server', statusCode: response.statusCode);
+      }
+
       return ApiResponse<T>.fromJson(jsonBody, fromJsonT);
     }
 
     // Handle error responses
-    final message = jsonBody['message'] as String? ?? 'Unknown error';
-    final details = jsonBody['details'];
+    // Try to parse JSON error response, but handle non-JSON responses gracefully
+    Map<String, dynamic>? jsonBody;
+    String errorMessage = 'Unknown error';
+    dynamic errorDetails;
 
+    try {
+      jsonBody = json.decode(response.body) as Map<String, dynamic>;
+      errorMessage = jsonBody['message'] as String? ?? 'Unknown error';
+      errorDetails = jsonBody['details'];
+    } catch (e) {
+      // If JSON parsing fails, use response body as error message (truncate if too long)
+      final bodyPreview = response.body.length > 200 ? '${response.body.substring(0, 200)}...' : response.body;
+      errorMessage = 'Server returned non-JSON response: $bodyPreview';
+    }
+
+    // Throw appropriate exception based on status code
     switch (response.statusCode) {
       case 400:
-        throw KgitonValidationException(message: message, details: details);
+        throw KgitonValidationException(message: errorMessage, details: errorDetails);
       case 401:
-        throw KgitonAuthenticationException(message: message);
+        throw KgitonAuthenticationException(message: errorMessage);
       case 403:
-        throw KgitonAuthorizationException(message: message);
+        throw KgitonAuthorizationException(message: errorMessage);
       case 404:
-        throw KgitonNotFoundException(message: message);
+        throw KgitonNotFoundException(message: errorMessage);
       case 409:
-        throw KgitonConflictException(message: message);
+        throw KgitonConflictException(message: errorMessage);
       case 429:
-        throw KgitonRateLimitException(message: message);
+        throw KgitonRateLimitException(message: errorMessage);
+      case 502:
+        throw KgitonApiException(
+          message: 'Bad Gateway - Backend server error. Please check if the backend is running correctly.',
+          statusCode: response.statusCode,
+          details: errorMessage,
+        );
+      case 503:
+        throw KgitonApiException(
+          message: 'Service Unavailable - Backend server is temporarily unavailable.',
+          statusCode: response.statusCode,
+          details: errorMessage,
+        );
+      case 504:
+        throw KgitonApiException(
+          message: 'Gateway Timeout - Backend server took too long to respond.',
+          statusCode: response.statusCode,
+          details: errorMessage,
+        );
       default:
-        throw KgitonApiException(message: message, statusCode: response.statusCode, details: details);
+        throw KgitonApiException(message: errorMessage, statusCode: response.statusCode, details: errorDetails);
     }
   }
 

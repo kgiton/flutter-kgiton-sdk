@@ -18,7 +18,7 @@ class KgitonApiConfig {
   static const String apiVersion = '/api/v1';
 
   /// Request timeout duration
-  static const Duration requestTimeout = Duration(seconds: 30);
+  static const Duration requestTimeout = Duration(seconds: 10);
 
   /// Storage keys for SharedPreferences
   static const String baseUrlStorageKey = 'kgiton_api_base_url';

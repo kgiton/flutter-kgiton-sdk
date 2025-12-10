@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:kgiton_ble_sdk/kgiton_ble_sdk.dart';
-import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'constants/ble_constants.dart';
@@ -10,6 +9,7 @@ import 'models/scale_connection_state.dart';
 import 'models/weight_data.dart';
 import 'models/control_response.dart';
 import 'exceptions/kgiton_exceptions.dart';
+import 'utils/permission_helper.dart';
 
 /// KGiTON Scale Service
 ///
@@ -21,7 +21,6 @@ import 'exceptions/kgiton_exceptions.dart';
 /// - Kontrol buzzer
 /// - Autentikasi perangkat
 class KGiTONScaleService {
-  final Logger? logger;
 
   // BLE SDK
   final _bleSdk = KgitonBleSdk();
@@ -52,9 +51,7 @@ class KGiTONScaleService {
   static const String _storageKey = 'kgiton_device_licenses';
 
   /// Constructor
-  KGiTONScaleService({this.logger}) {
-    _log('KGiTON Scale Service initialized');
-  }
+  KGiTONScaleService();
 
   // ============================================
   // GETTERS
@@ -103,11 +100,11 @@ class KGiTONScaleService {
   ///
   /// [timeout] - Durasi maksimal scan (default: 10 detik)
   /// [autoStopOnFound] - Otomatis stop scan setelah menemukan device (default: false)
+  /// [retryOnBluetoothError] - Otomatis retry jika Bluetooth tidak tersedia (default: true)
   ///
   /// Throws [BLEConnectionException] jika gagal memulai scan
-  Future<void> scanForDevices({Duration? timeout, bool autoStopOnFound = false}) async {
+  Future<void> scanForDevices({Duration? timeout, bool autoStopOnFound = false, bool retryOnBluetoothError = true}) async {
     if (_connectionState == ScaleConnectionState.scanning) {
-      _log('Already scanning', level: Level.warning);
       return;
     }
 
@@ -116,12 +113,20 @@ class KGiTONScaleService {
     _devicesController.add([]);
 
     final scanTimeout = timeout ?? BLEConstants.scanTimeout;
-    _log('Starting BLE scan for ${BLEConstants.deviceName} (timeout: ${scanTimeout.inSeconds}s, autoStop: $autoStopOnFound)');
 
     try {
+      // Check Bluetooth permissions before scanning
+      final hasPermissions = await PermissionHelper.checkBLEPermissions();
+      if (!hasPermissions) {
+        final granted = await PermissionHelper.requestBLEPermissions();
+        if (!granted) {
+          _updateConnectionState(ScaleConnectionState.error);
+          throw BLEConnectionException('Izin Bluetooth diperlukan untuk scan perangkat. Silakan berikan izin di Settings.');
+        }
+      }
+
       _scanSubscription = _bleSdk.scanResults.listen(
         (devices) {
-          _log('Received ${devices.length} total device(s) from BLE scan', level: Level.debug);
 
           // Debounce device processing - wait 300ms before processing
           // This prevents excessive processing when multiple devices are found rapidly
@@ -135,7 +140,6 @@ class KGiTONScaleService {
           });
         },
         onError: (error) {
-          _log('Scan error: $error', level: Level.error);
           stopScan();
         },
       );
@@ -147,7 +151,6 @@ class KGiTONScaleService {
       Timer(scanTimeout, () {
         if (_connectionState == ScaleConnectionState.scanning) {
           stopScan();
-          _log('Scan completed - found ${_availableDevices.length} device(s)');
 
           if (_availableDevices.isEmpty) {
             _updateConnectionState(ScaleConnectionState.disconnected);
@@ -155,7 +158,36 @@ class KGiTONScaleService {
         }
       });
     } catch (e) {
-      _log('Failed to start scan: $e', level: Level.error);
+      final errorString = e.toString();
+
+      // Check if it's a Bluetooth unavailable error
+      if (retryOnBluetoothError && (errorString.contains('BLUETOOTH_UNAVAILABLE') || errorString.contains('Bluetooth LE scanner not available'))) {
+        _updateConnectionState(ScaleConnectionState.disconnected);
+
+        // Wait for Bluetooth to become available
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Check if Bluetooth is now available
+        try {
+          final hasPermissions = await PermissionHelper.checkBLEPermissions();
+          if (hasPermissions) {
+            // Retry scan (recursive call, but with retryOnBluetoothError still true for one more attempt)
+            return await scanForDevices(
+              timeout: timeout,
+              autoStopOnFound: autoStopOnFound,
+              retryOnBluetoothError: false, // Don't retry again to prevent infinite loop
+            );
+          }
+        } catch (retryError) {
+          // Ignore retry error
+        }
+
+        // If retry failed, throw user-friendly error
+        _updateConnectionState(ScaleConnectionState.error);
+        throw BLEConnectionException('Bluetooth tidak tersedia. Silakan aktifkan Bluetooth dan coba lagi.', originalError: e);
+      }
+
+      // For other errors, just throw
       _updateConnectionState(ScaleConnectionState.error);
       throw BLEConnectionException('Gagal memulai scan: $e', originalError: e);
     }
@@ -170,8 +202,6 @@ class KGiTONScaleService {
 
     // Filter devices by name containing target device name
     for (final device in devices) {
-      _log('Device: ${device.name} (${device.id}), RSSI: ${device.rssi}', level: Level.debug);
-
       // Filter: name must contain "KGiTON" (case-insensitive)
       if (device.name.toUpperCase().contains(BLEConstants.deviceName.toUpperCase())) {
         // Cari license key untuk device ini
@@ -179,17 +209,13 @@ class KGiTONScaleService {
 
         final scaleDevice = ScaleDevice.fromBleDevice(device.name, device.id, device.rssi, licenseKey: licenseKey);
         _availableDevices.add(scaleDevice);
-        _log('✓ Device matched filter: ${device.name}${licenseKey != null ? " (has license key)" : ""}', level: Level.info);
       }
     }
 
     _devicesController.add(List.from(_availableDevices));
     if (_availableDevices.isNotEmpty) {
-      _log('Found ${_availableDevices.length} KGiTON device(s)', level: Level.info);
-
       // Auto stop scan jika diminta dan ada device yang ditemukan
       if (autoStopOnFound && _connectionState == ScaleConnectionState.scanning) {
-        _log('Auto-stopping scan - found device(s)', level: Level.info);
         stopScan();
       }
     }
@@ -209,14 +235,12 @@ class KGiTONScaleService {
     try {
       _bleSdk.stopScan();
     } catch (e) {
-      _log('Error stopping BLE scan: $e', level: Level.warning);
+      // Ignore error
     }
 
     if (_connectionState == ScaleConnectionState.scanning) {
       _updateConnectionState(ScaleConnectionState.disconnected);
     }
-
-    _log('Scan stopped');
   }
 
   // ============================================
@@ -232,11 +256,8 @@ class KGiTONScaleService {
   /// Throws [BLEConnectionException] jika gagal connect
   /// Throws [LicenseKeyException] jika license key invalid
   Future<ControlResponse> connectWithLicenseKey({required String deviceId, required String licenseKey}) async {
-    _log('Connecting with license key to device: $deviceId');
-
     // Stop scan jika masih berjalan
     if (_connectionState == ScaleConnectionState.scanning) {
-      _log('Stopping scan before connecting', level: Level.info);
       stopScan();
     }
 
@@ -269,7 +290,6 @@ class KGiTONScaleService {
       return response;
     } catch (e) {
       // Pastikan disconnect jika terjadi error
-      _log('Connect failed, ensuring cleanup: $e', level: Level.error);
       await _disconnectDevice();
       rethrow;
     }
@@ -285,8 +305,6 @@ class KGiTONScaleService {
       return ControlResponse.error('Tidak terhubung ke perangkat');
     }
 
-    _log('Disconnecting with license key');
-
     // Send DISCONNECT command dengan license key
     final response = await _sendControlCommand('DISCONNECT:$licenseKey');
 
@@ -298,7 +316,6 @@ class KGiTONScaleService {
 
   /// Disconnect tanpa license key (force disconnect)
   Future<void> disconnect() async {
-    _log('Force disconnect');
 
     // Make sure to stop any ongoing scans
     if (_connectionState == ScaleConnectionState.scanning) {
@@ -326,14 +343,10 @@ class KGiTONScaleService {
       throw BLEConnectionException('Buzzer characteristic tidak tersedia');
     }
 
-    _log('Triggering buzzer: $command');
-
     try {
       final bytes = command.codeUnits;
       await _bleSdk.write(_buzzerCharacteristicId!, bytes);
-      _log('Buzzer command sent successfully');
     } catch (e) {
-      _log('Failed to trigger buzzer: $e', level: Level.error);
       throw BLEConnectionException('Gagal mengirim perintah buzzer: $e', originalError: e);
     }
   }
@@ -344,14 +357,12 @@ class KGiTONScaleService {
 
   Future<void> _connectToDevice(String deviceId) async {
     _updateConnectionState(ScaleConnectionState.connecting);
-    _log('Connecting to $deviceId...');
 
     try {
       // Listen connection state
       _connectionSubscription = _bleSdk.connectionState.listen((stateMap) {
         if (stateMap.containsKey(deviceId)) {
           final state = stateMap[deviceId]!;
-          _log('Connection state changed: ${state.name}');
 
           if (state.isDisconnected) {
             _handleDisconnection();
@@ -369,18 +380,14 @@ class KGiTONScaleService {
       // Discover services
       await _discoverServices(deviceId);
     } catch (e) {
-      _log('Connection failed: $e', level: Level.error);
       _handleDisconnection();
       throw BLEConnectionException('Gagal terhubung: $e', originalError: e);
     }
   }
 
   Future<void> _discoverServices(String deviceId) async {
-    _log('Discovering services...');
-
     try {
       final services = await _bleSdk.discoverServices(deviceId);
-      _log('Found ${services.length} services');
 
       BleService? targetService;
 
@@ -388,7 +395,6 @@ class KGiTONScaleService {
       for (final service in services) {
         if (service.uuid.toLowerCase() == BLEConstants.serviceUUID.toLowerCase()) {
           targetService = service;
-          _log('Target service found');
           break;
         }
       }
@@ -403,13 +409,10 @@ class KGiTONScaleService {
 
         if (uuid == BLEConstants.txCharacteristicUUID.toLowerCase()) {
           _txCharacteristicId = char.id;
-          _log('TX characteristic found');
         } else if (uuid == BLEConstants.controlCharacteristicUUID.toLowerCase()) {
           _controlCharacteristicId = char.id;
-          _log('Control characteristic found');
         } else if (uuid == BLEConstants.buzzerCharacteristicUUID.toLowerCase()) {
           _buzzerCharacteristicId = char.id;
-          _log('Buzzer characteristic found');
         }
       }
 
@@ -420,10 +423,7 @@ class KGiTONScaleService {
 
       // Setup listeners
       await _setupControlListener();
-
-      _log('Service discovery completed');
     } catch (e) {
-      _log('Service discovery failed: $e', level: Level.error);
       throw BLEConnectionException('Gagal menemukan service: $e', originalError: e);
     }
   }
@@ -434,28 +434,21 @@ class KGiTONScaleService {
     try {
       await _bleSdk.setNotify(_controlCharacteristicId!, true);
 
-      // Wait for writeDescriptor operation to complete
-      // Android GATT operations are sequential - 100ms is sufficient for modern devices
-      await Future.delayed(const Duration(milliseconds: 100));
-
       _controlSubscription = _bleSdk
           .notificationStream(_controlCharacteristicId!)
           .listen(
             (value) {
               final response = String.fromCharCodes(value).trim();
-              _log('Control response received: $response');
 
               // Emit response ke stream untuk digunakan oleh _sendControlCommand
               _controlResponseController.add(response);
             },
             onError: (error) {
-              _log('Control stream error: $error', level: Level.error);
+              // Ignore error
             },
           );
-
-      _log('Control listener setup completed');
     } catch (e) {
-      _log('Failed to setup control listener: $e', level: Level.error);
+      // Ignore error
     }
   }
 
@@ -463,45 +456,31 @@ class KGiTONScaleService {
     if (_txCharacteristicId == null) return;
 
     try {
-      _log('Setting up data listener...');
-
       await _bleSdk.setNotify(_txCharacteristicId!, true);
-
-      // Wait for writeDescriptor operation to complete
-      await Future.delayed(const Duration(milliseconds: 100));
 
       _dataSubscription = _bleSdk
           .notificationStream(_txCharacteristicId!)
           .listen(
             (value) {
               try {
-                // Log raw bytes untuk debugging
-                _log('Raw bytes received: $value (length: ${value.length})', level: Level.debug);
-
                 final weightStr = String.fromCharCodes(value).trim();
-                _log('Parsed string: "$weightStr" (length: ${weightStr.length})', level: Level.debug);
 
                 final weight = double.tryParse(weightStr);
 
                 if (weight != null) {
                   final weightData = WeightData(weight: weight);
                   _weightStreamController.add(weightData);
-                  _log('Weight received: ${weightData.formattedWeight} kg (raw: $weight)', level: Level.info);
-                } else {
-                  _log('Invalid weight format: "$weightStr" (bytes: $value)', level: Level.warning);
                 }
               } catch (e) {
-                _log('Error processing weight data: $e (bytes: $value)', level: Level.error);
+                // Ignore parsing error
               }
             },
             onError: (error) {
-              _log('Data stream error: $error', level: Level.error);
+              // Ignore error
             },
           );
-
-      _log('Data listener active');
     } catch (e) {
-      _log('Failed to setup data listener: $e', level: Level.error);
+      // Ignore error
     }
   }
 
@@ -510,16 +489,12 @@ class KGiTONScaleService {
       throw BLEConnectionException('Control characteristic tidak tersedia');
     }
 
-    _log('Sending control command: ${command.split(':').first}');
-
     try {
       final bytes = command.codeUnits;
       await _bleSdk.write(_controlCharacteristicId!, bytes);
 
-      // Tunggu response dari notification stream (2 detik cukup untuk ESP32)
-      final responseStr = await _controlResponseController.stream.first.timeout(const Duration(seconds: 2), onTimeout: () => 'TIMEOUT');
-
-      _log('Control response: $responseStr');
+      // Tunggu response dari notification stream (1 detik cukup untuk ESP32)
+      final responseStr = await _controlResponseController.stream.first.timeout(const Duration(seconds: 1), onTimeout: () => 'TIMEOUT');
 
       if (responseStr == 'TIMEOUT') {
         throw BLEConnectionException('Timeout menunggu response dari device');
@@ -540,7 +515,7 @@ class KGiTONScaleService {
           if (responseStr == 'CONNECTED') {
             // Fire and forget - tidak menunggu buzzer selesai
             triggerBuzzer('BUZZ').catchError((e) {
-              _log('Failed to trigger success buzzer: $e', level: Level.warning);
+              // Ignore buzzer error
             });
           }
         } else if (responseStr == 'DISCONNECTED') {
@@ -548,15 +523,12 @@ class KGiTONScaleService {
         }
       } else {
         // Jika response error (license key invalid, dll), auto-disconnect
-        _log('Control command failed: ${response.message}. Auto-disconnecting...', level: Level.warning);
-
         // Disconnect dari device karena autentikasi gagal
         await _disconnectDevice();
       }
 
       return response;
     } catch (e) {
-      _log('Control command failed: $e', level: Level.error);
       throw BLEConnectionException('Gagal mengirim perintah: $e', originalError: e);
     }
   }
@@ -566,7 +538,7 @@ class KGiTONScaleService {
       try {
         await _bleSdk.disconnect(_connectedDeviceId!);
       } catch (e) {
-        _log('Disconnect error: $e', level: Level.warning);
+        // Ignore error
       }
     }
 
@@ -574,8 +546,6 @@ class KGiTONScaleService {
   }
 
   void _handleDisconnection() {
-    _log('Handling disconnection');
-
     _connectedDeviceId = null;
     _txCharacteristicId = null;
     _controlCharacteristicId = null;
@@ -596,28 +566,6 @@ class KGiTONScaleService {
     if (_connectionState != newState) {
       _connectionState = newState;
       _connectionStateController.add(newState);
-      _log('Connection state: ${newState.displayName}');
-    }
-  }
-
-  void _log(String message, {Level level = Level.debug}) {
-    if (logger != null) {
-      switch (level) {
-        case Level.debug:
-          logger!.d('[KGiTON SDK] $message');
-          break;
-        case Level.info:
-          logger!.i('[KGiTON SDK] $message');
-          break;
-        case Level.warning:
-          logger!.w('[KGiTON SDK] $message');
-          break;
-        case Level.error:
-          logger!.e('[KGiTON SDK] $message');
-          break;
-        default:
-          logger!.d('[KGiTON SDK] $message');
-      }
     }
   }
 
@@ -639,10 +587,8 @@ class KGiTONScaleService {
       // Save back to storage
       final jsonString = jsonEncode(licenseMap);
       await prefs.setString(_storageKey, jsonString);
-
-      _log('License key saved for device: $deviceId', level: Level.info);
     } catch (e) {
-      _log('Failed to save license key: $e', level: Level.error);
+      // Ignore error
     }
   }
 
@@ -659,7 +605,6 @@ class KGiTONScaleService {
 
       return {};
     } catch (e) {
-      _log('Failed to load license key map: $e', level: Level.error);
       return {};
     }
   }
@@ -670,8 +615,6 @@ class KGiTONScaleService {
 
   /// Dispose - hanya panggil saat app closing
   void dispose() {
-    _log('Disposing KGiTON Scale Service');
-
     // Cancel debounce timer
     _deviceProcessingTimer?.cancel();
     _deviceProcessingTimer = null;

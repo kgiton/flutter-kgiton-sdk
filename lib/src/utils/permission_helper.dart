@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:logger/logger.dart';
 
 /// Helper class untuk menangani BLE permissions di berbagai versi Android dan iOS
 class PermissionHelper {
-  static final _logger = Logger();
 
   /// Request semua BLE permissions yang diperlukan
   ///
@@ -22,21 +20,17 @@ class PermissionHelper {
   static Future<bool> _requestAndroidBLEPermissions() async {
     try {
       final androidVersion = await _getAndroidVersion();
-      _logger.d('Requesting BLE permissions for Android version: $androidVersion');
 
       Map<Permission, PermissionStatus> statuses;
 
       if (androidVersion >= 31) {
         // Android 12+ (API 31+)
-        _logger.i('Requesting Android 12+ permissions (BLUETOOTH_SCAN, BLUETOOTH_CONNECT)');
         statuses = await [Permission.bluetoothScan, Permission.bluetoothConnect].request();
 
         final allGranted = statuses.values.every((status) => status.isGranted);
-        _logger.i('Android 12+ permissions result: $allGranted');
         return allGranted;
       } else if (androidVersion >= 29) {
         // Android 10-11 (API 29-30) - CRITICAL: Memerlukan FINE_LOCATION
-        _logger.i('Requesting Android 10-11 permissions (FINE_LOCATION)');
         // NOTE: Permission.bluetooth tidak tersedia di permission_handler untuk Android < 12
         // Bluetooth permissions (BLUETOOTH, BLUETOOTH_ADMIN) di-granted otomatis via manifest
         statuses = await [Permission.location].request();
@@ -44,24 +38,19 @@ class PermissionHelper {
         // Check if location service is enabled
         final locationServiceEnabled = await Permission.location.serviceStatus.isEnabled;
         if (!locationServiceEnabled) {
-          _logger.e('Location service is disabled - BLE scanning will not work on Android 10-11');
           return false;
         }
 
         final allGranted = statuses.values.every((status) => status.isGranted);
-        _logger.i('Android 10-11 permissions result: $allGranted, Location service enabled: $locationServiceEnabled');
         return allGranted && locationServiceEnabled;
       } else {
         // Android 9 and below (API 28-)
-        _logger.i('Requesting Android 9- permissions (COARSE_LOCATION)');
         statuses = await [Permission.location].request();
 
         final allGranted = statuses.values.every((status) => status.isGranted);
-        _logger.i('Android 9- permissions result: $allGranted');
         return allGranted;
       }
     } catch (e) {
-      _logger.e('Error requesting Android BLE permissions: $e');
       return false;
     }
   }
@@ -69,12 +58,9 @@ class PermissionHelper {
   /// Request BLE permissions untuk iOS
   static Future<bool> _requestIOSBLEPermissions() async {
     try {
-      _logger.i('Requesting iOS Bluetooth permission');
       final status = await Permission.bluetooth.request();
-      _logger.i('iOS Bluetooth permission result: ${status.isGranted}');
       return status.isGranted;
     } catch (e) {
-      _logger.e('Error requesting iOS BLE permission: $e');
       return false;
     }
   }
@@ -112,7 +98,6 @@ class PermissionHelper {
         return hasLocation;
       }
     } catch (e) {
-      _logger.e('Error checking Android BLE permissions: $e');
       return false;
     }
   }
@@ -122,7 +107,6 @@ class PermissionHelper {
     try {
       return await Permission.bluetooth.isGranted;
     } catch (e) {
-      _logger.e('Error checking iOS BLE permission: $e');
       return false;
     }
   }
@@ -147,7 +131,6 @@ class PermissionHelper {
       }
     } catch (e) {
       // If bluetoothScan throws error, it means API < 31
-      _logger.d('bluetoothScan not available, Android < 12');
     }
 
     // Default ke Android 10 untuk testing purposes
@@ -162,7 +145,6 @@ class PermissionHelper {
     try {
       return await Permission.location.serviceStatus.isEnabled;
     } catch (e) {
-      _logger.e('Error checking location service: $e');
       return false;
     }
   }

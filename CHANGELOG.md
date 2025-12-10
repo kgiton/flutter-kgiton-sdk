@@ -4,6 +4,75 @@ All notable changes to KGiTON Flutter SDK will be documented in this file.
 
 ---
 
+## [1.3.0] - 2025-12-10
+
+### 🎉 Added
+
+- **Helper Classes**: Simplified wrapper classes untuk common operations
+  - `KgitonAuthHelper`: Session management, login/register/logout dengan token storage
+  - `KgitonCartHelper`: Cart operations dengan consistent return format
+  - `KgitonLicenseHelper`: License management dan validation
+- **Consistent API**: Semua helpers return Map dengan format `{success, message, data}`
+- **Error Handling**: Built-in error handling di setiap helper method
+- **Easy Integration**: Aplikasi tidak perlu implement token storage dan error handling sendiri
+
+### 📝 Notes
+
+- Example app sekarang menggunakan SDK helpers (code 70% lebih sedikit)
+- Backward compatible - API lama masih bisa digunakan
+- Developers bisa pilih: gunakan helpers (simple) atau services langsung (advanced)
+
+### 📚 Migration Guide
+
+**Before (Manual):**
+```dart
+final apiService = KgitonApiService(baseUrl: url);
+final authData = await apiService.auth.login(email, password);
+await prefs.setString('token', authData.accessToken);
+```
+
+**After (With Helper):**
+```dart
+final auth = KgitonAuthHelper(prefs, baseUrl: url);
+final result = await auth.login(email, password);
+if (result['success']) print('Logged in!');
+```
+
+---
+
+## [1.2.2] - 2025-12-10
+
+### 🔧 Fixed
+
+- **Bluetooth Auto-Recovery**: SDK now automatically detects and retries when Bluetooth is enabled after being disabled
+- **No App Restart Required**: Users no longer need to restart the app or clear data after enabling Bluetooth
+- **Smart Error Handling**: Automatically checks Bluetooth permissions and state before scanning
+- **Auto-Retry Logic**: Waits 2 seconds and retries scan if Bluetooth becomes available
+
+### 📝 Notes
+
+- `scanForDevices()` now has `retryOnBluetoothError` parameter (default: true)
+- SDK automatically requests permissions if not granted
+- Fixes issue where "BLUETOOTH_UNAVAILABLE" error persisted after enabling Bluetooth
+
+---
+
+## [1.2.1] - 2025-12-10
+
+### 🔧 Fixed
+
+- **Simplified Logging**: Removed excessive debug box formatting, kept essential logging
+- **Backend Sync**: Updated SDK to work seamlessly with backend v1.2.0 dual pricing fixes
+- **Performance**: Reduced log verbosity for better performance in production
+
+### 📝 Notes
+
+- Backend v1.2.0 fixed 502 error for PCS only items
+- SDK validation already correct, no logic changes needed
+- All 3 pricing modes now work correctly: KG only, PCS only, Dual pricing
+
+---
+
 ## [1.2.0] - 2025-12-10
 
 ### 🎯 Dual Pricing System Support

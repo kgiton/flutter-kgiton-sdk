@@ -16,11 +16,11 @@ class BLEConstants {
   static const String buzzerCharacteristicUUID = "abcd9999-1234-1234-1234-123456789abc"; // Kontrol buzzer
 
   // Timeouts
-  static const Duration scanTimeout = Duration(seconds: 20);
-  static const Duration connectionTimeout = Duration(seconds: 20);
-  static const Duration commandTimeout = Duration(seconds: 5);
+  static const Duration scanTimeout = Duration(seconds: 5);
+  static const Duration connectionTimeout = Duration(seconds: 10);
+  static const Duration commandTimeout = Duration(seconds: 2);
 
   // Retry Configuration
   static const int maxRetryAttempts = 3;
-  static const Duration retryDelay = Duration(seconds: 2);
+  static const Duration retryDelay = Duration(seconds: 1);
 }
