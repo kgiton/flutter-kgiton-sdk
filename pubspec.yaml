@@ -1,6 +1,6 @@
 name: kgiton_sdk
-description: KGiTON SDK - Flutter package untuk integrasi timbangan dan API backend dengan session-based cart & payment system
-version: 1.0.0
+description: KGiTON SDK - Flutter package untuk integrasi timbangan dan API backend dengan dual pricing & session-based cart system
+version: 1.2.0
 homepage: https://github.com/kgiton/flutter-kgiton-sdk
 repository: https://github.com/kgiton/flutter-kgiton-sdk
 issue_tracker: https://github.com/kgiton/flutter-kgiton-sdk/issues

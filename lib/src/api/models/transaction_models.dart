@@ -110,8 +110,8 @@ class TransactionDetailItem {
   final String? itemId; // Optional: may be null for custom items
   final String itemName;
   final String unit;
-  final double weight; // Weight/quantity in kg or unit
-  final double pricePerUnit; // Price per kg/unit
+  final double? weight; // Weight/quantity in kg or unit (nullable: at least one quantity required)
+  final double? pricePerKg; // Price per kg/unit (nullable: at least one price required)
   final int? quantityPcs; // Quantity in pieces (optional)
   final double? pricePerPcs; // Price per piece (optional)
   final double totalPrice;
@@ -123,8 +123,8 @@ class TransactionDetailItem {
     this.itemId,
     required this.itemName,
     required this.unit,
-    required this.weight,
-    required this.pricePerUnit,
+    this.weight,
+    this.pricePerKg,
     this.quantityPcs,
     this.pricePerPcs,
     required this.totalPrice,
@@ -138,8 +138,8 @@ class TransactionDetailItem {
       itemId: json['item_id'] as String?,
       itemName: json['item_name'] as String,
       unit: json['unit'] as String,
-      weight: ((json['weight'] as num?) ?? 0).toDouble(),
-      pricePerUnit: ((json['price_per_unit'] as num?) ?? 0).toDouble(),
+      weight: json['weight'] != null ? (json['weight'] as num).toDouble() : null,
+      pricePerKg: json['price_per_kg'] != null ? (json['price_per_kg'] as num).toDouble() : null,
       quantityPcs: json['quantity_pcs'] as int?,
       pricePerPcs: json['price_per_pcs'] != null ? ((json['price_per_pcs'] as num).toDouble()) : null,
       totalPrice: ((json['total_price'] as num?) ?? 0).toDouble(),
@@ -154,8 +154,8 @@ class TransactionDetailItem {
       if (itemId != null) 'item_id': itemId,
       'item_name': itemName,
       'unit': unit,
-      'weight': weight,
-      'price_per_unit': pricePerUnit,
+      if (weight != null) 'weight': weight,
+      if (pricePerKg != null) 'price_per_kg': pricePerKg,
       if (quantityPcs != null) 'quantity_pcs': quantityPcs,
       if (pricePerPcs != null) 'price_per_pcs': pricePerPcs,
       'total_price': totalPrice,
@@ -165,10 +165,13 @@ class TransactionDetailItem {
 
   /// Deprecated fields for backwards compatibility
   @Deprecated('Use weight instead')
-  double get quantity => weight;
+  double? get quantity => weight;
 
-  @Deprecated('Use pricePerUnit instead')
-  double get unitPrice => pricePerUnit;
+  @Deprecated('Use pricePerKg instead')
+  double? get pricePerUnit => pricePerKg;
+
+  @Deprecated('Use pricePerKg instead')
+  double? get unitPrice => pricePerKg;
 }
 
 /// Transaction detail (full transaction with items)

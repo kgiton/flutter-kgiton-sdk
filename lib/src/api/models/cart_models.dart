@@ -10,9 +10,10 @@ class CartItem {
   final String userId;
   final String licenseKey;
   final String itemId;
-  final double quantity;
+  final double? quantity; // Nullable: at least one of quantity or quantityPcs required
   final int? quantityPcs;
-  final double unitPrice; // Stored at add time for consistency
+  final double? pricePerKg; // Stored at add time (nullable: at least one price required)
+  final double? pricePerPcs; // Stored at add time (nullable: at least one price required)
   final double totalPrice; // Calculated and stored at add time
   final String? notes;
   final DateTime createdAt;
@@ -25,9 +26,10 @@ class CartItem {
     required this.userId,
     required this.licenseKey,
     required this.itemId,
-    required this.quantity,
+    this.quantity,
     this.quantityPcs,
-    required this.unitPrice,
+    this.pricePerKg,
+    this.pricePerPcs,
     required this.totalPrice,
     this.notes,
     required this.createdAt,
@@ -42,9 +44,10 @@ class CartItem {
       userId: json['user_id'] as String,
       licenseKey: json['license_key'] as String,
       itemId: json['item_id'] as String,
-      quantity: (json['quantity'] as num).toDouble(),
+      quantity: json['quantity'] != null ? (json['quantity'] as num).toDouble() : null,
       quantityPcs: json['quantity_pcs'] as int?,
-      unitPrice: (json['unit_price'] as num).toDouble(),
+      pricePerKg: json['price_per_kg'] != null ? (json['price_per_kg'] as num).toDouble() : null,
+      pricePerPcs: json['price_per_pcs'] != null ? (json['price_per_pcs'] as num).toDouble() : null,
       totalPrice: (json['total_price'] as num).toDouble(),
       notes: json['notes'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -60,9 +63,10 @@ class CartItem {
       'user_id': userId,
       'license_key': licenseKey,
       'item_id': itemId,
-      'quantity': quantity,
+      if (quantity != null) 'quantity': quantity,
       if (quantityPcs != null) 'quantity_pcs': quantityPcs,
-      'unit_price': unitPrice,
+      if (pricePerKg != null) 'price_per_kg': pricePerKg,
+      if (pricePerPcs != null) 'price_per_pcs': pricePerPcs,
       'total_price': totalPrice,
       if (notes != null) 'notes': notes,
       'created_at': createdAt.toIso8601String(),
@@ -118,18 +122,18 @@ class AddCartRequest {
   final String cartId; // Cart session identifier (device ID, session ID, etc)
   final String licenseKey;
   final String itemId;
-  final double quantity;
+  final double? quantity; // Nullable: at least one of quantity or quantityPcs required
   final int? quantityPcs;
   final String? notes;
 
-  AddCartRequest({required this.cartId, required this.licenseKey, required this.itemId, required this.quantity, this.quantityPcs, this.notes});
+  AddCartRequest({required this.cartId, required this.licenseKey, required this.itemId, this.quantity, this.quantityPcs, this.notes});
 
   Map<String, dynamic> toJson() {
     return {
       'cart_id': cartId,
       'license_key': licenseKey,
       'item_id': itemId,
-      'quantity': quantity,
+      if (quantity != null) 'quantity': quantity,
       if (quantityPcs != null) 'quantity_pcs': quantityPcs,
       if (notes != null) 'notes': notes,
     };
@@ -137,7 +141,19 @@ class AddCartRequest {
 
   /// Validate request data
   bool isValid() {
-    return cartId.isNotEmpty && licenseKey.isNotEmpty && itemId.isNotEmpty && quantity > 0 && (quantityPcs == null || quantityPcs! > 0);
+    // Basic validation
+    if (cartId.isEmpty || licenseKey.isEmpty || itemId.isEmpty) return false;
+
+    // At least one quantity must be provided
+    if (quantity == null && quantityPcs == null) return false;
+
+    // Validate quantity if provided
+    if (quantity != null && quantity! <= 0) return false;
+
+    // Validate quantityPcs if provided
+    if (quantityPcs != null && quantityPcs! <= 0) return false;
+
+    return true;
   }
 }
 

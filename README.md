@@ -17,6 +17,7 @@ Official Flutter SDK for integrating with KGiTON scale devices and backend API.
 - ✅ **Real-time Weight Data**: Stream weight measurements at ~10 Hz with automatic formatting
 - ✅ **License Authentication**: Secure device authentication with license key validation
 - ✅ **REST API Client**: Complete backend integration for cart, transactions, and items
+- ✅ **Dual Pricing System**: Support per kg, per pcs, or both simultaneously (v1.2.0+)
 - ✅ **Smart Scanning**: Auto-stop scan when device found (battery efficient)
 - ✅ **Cross-Platform**: iOS and Android support with platform-specific optimizations
 - ✅ **Type-Safe**: Comprehensive error handling and type-safe models
@@ -250,6 +251,8 @@ await apiService.owner.deleteItem(newItem.id);
 final cartId = 'device-12345'; // Your session identifier
 
 // Add items to cart (each call creates a new entry)
+
+// Example 1: Per kg only
 await apiService.cart.addItemToCart(
   AddCartRequest(
     cartId: cartId,
@@ -260,14 +263,26 @@ await apiService.cart.addItemToCart(
   ),
 );
 
-// Add another entry (even same item creates new entry)
+// Example 2: Per pcs only
 await apiService.cart.addItemToCart(
   AddCartRequest(
     cartId: cartId,
     licenseKey: 'YOUR-LICENSE-KEY',
-    itemId: 'apple-item-id', // Same item, new entry
-    quantity: 0.5,
-    notes: 'Second weighing',
+    itemId: 'orange-item-id',
+    quantityPcs: 10,
+    notes: '10 pieces',
+  ),
+);
+
+// Example 3: Dual pricing (kg + pcs)
+await apiService.cart.addItemToCart(
+  AddCartRequest(
+    cartId: cartId,
+    licenseKey: 'YOUR-LICENSE-KEY',
+    itemId: 'banana-item-id',
+    quantity: 2.5,
+    quantityPcs: 15,
+    notes: '2.5kg + 15 pieces',
   ),
 );
 
@@ -464,13 +479,13 @@ See [LICENSE](LICENSE) file for complete terms and conditions.
 
 <div align="center">
 
-**SDK Version:** 1.0.0  
+**SDK Version:** 1.2.0  
 **License:** Proprietary - Commercial Use Only  
 **Platform:** iOS 12.0+ | Android 21+  
 **Flutter:** ≥3.0.0 | Dart ≥3.10.0  
 
 **API Base URL:** `https://api.example.com`  
-**API Version:** `v1`
+**API Version:** `v1.2.0` (Dual Pricing Support)
 
 ---
 
