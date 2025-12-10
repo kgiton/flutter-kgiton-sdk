@@ -3,7 +3,6 @@ import 'package:permission_handler/permission_handler.dart';
 
 /// Helper class untuk menangani BLE permissions di berbagai versi Android dan iOS
 class PermissionHelper {
-
   /// Request semua BLE permissions yang diperlukan
   ///
   /// Returns true jika semua permissions granted

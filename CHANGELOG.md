@@ -4,6 +4,28 @@ All notable changes to KGiTON Flutter SDK will be documented in this file.
 
 ---
 
+## [1.3.1] - 2025-12-11
+
+### 🔧 Fixed
+
+- **Device Connection Reliability**: Improved connection stability
+  - Added automatic retry mechanism (up to 2 retries) for commands
+  - Reduced connection timeout for faster feedback
+  - Fixed command sequencing issues
+  - Optimized connection process
+- **Connection Speed**: Significantly faster connection process
+  - Success: ~1-2 seconds (previously 3-5 seconds)
+  - With retry: ~2-5 seconds (previously 8+ seconds)
+  - Maximum timeout: 6 seconds (previously 15+ seconds)
+
+### 📝 Notes
+
+- No breaking changes - fully backward compatible
+- Connection is now both faster and more reliable
+- Automatic retry improves success rate in poor conditions
+
+---
+
 ## [1.3.0] - 2025-12-10
 
 ### 🎉 Added

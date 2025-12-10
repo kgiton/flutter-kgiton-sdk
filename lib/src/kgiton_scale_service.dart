@@ -21,7 +21,6 @@ import 'utils/permission_helper.dart';
 /// - Kontrol buzzer
 /// - Autentikasi perangkat
 class KGiTONScaleService {
-
   // BLE SDK
   final _bleSdk = KgitonBleSdk();
 
@@ -127,7 +126,6 @@ class KGiTONScaleService {
 
       _scanSubscription = _bleSdk.scanResults.listen(
         (devices) {
-
           // Debounce device processing - wait 300ms before processing
           // This prevents excessive processing when multiple devices are found rapidly
           _pendingDevices = devices;
@@ -316,7 +314,6 @@ class KGiTONScaleService {
 
   /// Disconnect tanpa license key (force disconnect)
   Future<void> disconnect() async {
-
     // Make sure to stop any ongoing scans
     if (_connectionState == ScaleConnectionState.scanning) {
       stopScan();
@@ -484,53 +481,67 @@ class KGiTONScaleService {
     }
   }
 
-  Future<ControlResponse> _sendControlCommand(String command) async {
+  Future<ControlResponse> _sendControlCommand(String command, {int retries = 2}) async {
     if (_controlCharacteristicId == null) {
       throw BLEConnectionException('Control characteristic tidak tersedia');
     }
 
-    try {
-      final bytes = command.codeUnits;
-      await _bleSdk.write(_controlCharacteristicId!, bytes);
+    for (int attempt = 0; attempt <= retries; attempt++) {
+      try {
+        final bytes = command.codeUnits;
+        await _bleSdk.write(_controlCharacteristicId!, bytes);
 
-      // Tunggu response dari notification stream (1 detik cukup untuk ESP32)
-      final responseStr = await _controlResponseController.stream.first.timeout(const Duration(seconds: 1), onTimeout: () => 'TIMEOUT');
+        // Tunggu response dari notification stream (2 detik)
+        final responseStr = await _controlResponseController.stream.first.timeout(const Duration(seconds: 2), onTimeout: () => 'TIMEOUT');
 
-      if (responseStr == 'TIMEOUT') {
-        throw BLEConnectionException('Timeout menunggu response dari device');
-      }
-
-      final response = ControlResponse.fromDeviceResponse(responseStr);
-
-      // Update state berdasarkan response
-      if (response.success) {
-        if (responseStr == 'CONNECTED' || responseStr == 'ALREADY_CONNECTED') {
-          _updateConnectionState(ScaleConnectionState.authenticated);
-
-          // Setup data listener setelah authenticated
-          await _setupDataListener();
-
-          // Trigger buzzer sukses (hanya untuk CONNECTED, bukan ALREADY_CONNECTED)
-          // Non-blocking untuk tidak menambah delay pada proses autentikasi
-          if (responseStr == 'CONNECTED') {
-            // Fire and forget - tidak menunggu buzzer selesai
-            triggerBuzzer('BUZZ').catchError((e) {
-              // Ignore buzzer error
-            });
+        if (responseStr == 'TIMEOUT') {
+          // Retry jika timeout dan masih ada kesempatan
+          if (attempt < retries) {
+            continue; // Try again
           }
-        } else if (responseStr == 'DISCONNECTED') {
-          _updateConnectionState(ScaleConnectionState.connected);
+          throw BLEConnectionException('Timeout menunggu response dari device');
         }
-      } else {
-        // Jika response error (license key invalid, dll), auto-disconnect
-        // Disconnect dari device karena autentikasi gagal
-        await _disconnectDevice();
-      }
 
-      return response;
-    } catch (e) {
-      throw BLEConnectionException('Gagal mengirim perintah: $e', originalError: e);
+        final response = ControlResponse.fromDeviceResponse(responseStr);
+
+        // Update state berdasarkan response
+        if (response.success) {
+          if (responseStr == 'CONNECTED' || responseStr == 'ALREADY_CONNECTED') {
+            _updateConnectionState(ScaleConnectionState.authenticated);
+
+            // Setup data listener setelah authenticated
+            await _setupDataListener();
+
+            // Trigger buzzer sukses (hanya untuk CONNECTED, bukan ALREADY_CONNECTED)
+            // Non-blocking untuk tidak menambah delay pada proses autentikasi
+            if (responseStr == 'CONNECTED') {
+              // Fire and forget - tidak menunggu buzzer selesai
+              triggerBuzzer('BUZZ').catchError((e) {
+                // Ignore buzzer error
+              });
+            }
+          } else if (responseStr == 'DISCONNECTED') {
+            _updateConnectionState(ScaleConnectionState.connected);
+          }
+        } else {
+          // Jika response error (license key invalid, dll), auto-disconnect
+          // Disconnect dari device karena autentikasi gagal
+          await _disconnectDevice();
+        }
+
+        return response;
+      } catch (e) {
+        // Retry on error if attempts remain
+        if (attempt < retries) {
+          await Future.delayed(Duration(milliseconds: 100 * (attempt + 1)));
+          continue;
+        }
+        throw BLEConnectionException('Gagal mengirim perintah: $e', originalError: e);
+      }
     }
+
+    // Should never reach here
+    throw BLEConnectionException('Gagal mengirim perintah setelah $retries percobaan');
   }
 
   Future<void> _disconnectDevice() async {
