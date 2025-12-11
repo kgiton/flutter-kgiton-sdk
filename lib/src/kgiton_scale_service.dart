@@ -162,8 +162,8 @@ class KGiTONScaleService {
       if (retryOnBluetoothError && (errorString.contains('BLUETOOTH_UNAVAILABLE') || errorString.contains('Bluetooth LE scanner not available'))) {
         _updateConnectionState(ScaleConnectionState.disconnected);
 
-        // Wait for Bluetooth to become available
-        await Future.delayed(const Duration(milliseconds: 500));
+        // Wait for Bluetooth to become available (reduced delay)
+        await Future.delayed(const Duration(milliseconds: 200));
 
         // Check if Bluetooth is now available
         try {
@@ -374,7 +374,7 @@ class KGiTONScaleService {
 
       _connectedDeviceId = deviceId;
 
-      // Discover services
+      // Discover services immediately
       await _discoverServices(deviceId);
     } catch (e) {
       _handleDisconnection();
@@ -429,6 +429,8 @@ class KGiTONScaleService {
     if (_controlCharacteristicId == null) return;
 
     try {
+      // Minimal delay to avoid command queue issues
+      await Future.delayed(const Duration(milliseconds: 30));
       await _bleSdk.setNotify(_controlCharacteristicId!, true);
 
       _controlSubscription = _bleSdk
@@ -453,6 +455,8 @@ class KGiTONScaleService {
     if (_txCharacteristicId == null) return;
 
     try {
+      // Minimal delay to avoid command queue issues
+      await Future.delayed(const Duration(milliseconds: 30));
       await _bleSdk.setNotify(_txCharacteristicId!, true);
 
       _dataSubscription = _bleSdk
@@ -491,8 +495,8 @@ class KGiTONScaleService {
         final bytes = command.codeUnits;
         await _bleSdk.write(_controlCharacteristicId!, bytes);
 
-        // Tunggu response dari notification stream (2 detik)
-        final responseStr = await _controlResponseController.stream.first.timeout(const Duration(seconds: 2), onTimeout: () => 'TIMEOUT');
+        // Tunggu response dari notification stream (800ms - faster response)
+        final responseStr = await _controlResponseController.stream.first.timeout(const Duration(milliseconds: 800), onTimeout: () => 'TIMEOUT');
 
         if (responseStr == 'TIMEOUT') {
           // Retry jika timeout dan masih ada kesempatan

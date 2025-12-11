@@ -17,10 +17,10 @@ class BLEConstants {
 
   // Timeouts
   static const Duration scanTimeout = Duration(seconds: 5);
-  static const Duration connectionTimeout = Duration(seconds: 10);
-  static const Duration commandTimeout = Duration(seconds: 2);
+  static const Duration connectionTimeout = Duration(seconds: 5);
+  static const Duration commandTimeout = Duration(milliseconds: 800);
 
   // Retry Configuration
   static const int maxRetryAttempts = 3;
-  static const Duration retryDelay = Duration(seconds: 1);
+  static const Duration retryDelay = Duration(milliseconds: 500);
 }

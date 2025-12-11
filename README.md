@@ -17,9 +17,9 @@ Official Flutter SDK for integrating with KGiTON scale devices and backend API.
 - ✅ **Real-time Weight Data**: Stream weight measurements at ~10 Hz with automatic formatting
 - ✅ **License Authentication**: Secure device authentication with license key validation
 - ✅ **REST API Client**: Complete backend integration for cart, transactions, and items
-- ✅ **Dual Pricing System**: Support per kg, per pcs, or both simultaneously (v1.2.1+ - Fully Working)
-- ✅ **Bluetooth Auto-Recovery**: Automatic retry when Bluetooth is enabled (v1.2.2+)
-- ✅ **Helper Classes**: Simplified wrappers for auth, cart, and license operations (v1.3.0+)
+- ✅ **Dual Pricing System**: Support per kg, per pcs, or both simultaneously
+- ✅ **Bluetooth Auto-Recovery**: Automatic retry when Bluetooth is enabled
+- ✅ **Helper Classes**: Simplified wrappers for auth, cart, and license operations
 - ✅ **Smart Scanning**: Auto-stop scan when device found (battery efficient)
 - ✅ **Cross-Platform**: iOS and Android support with platform-specific optimizations
 - ✅ **Type-Safe**: Comprehensive error handling and type-safe models
@@ -576,13 +576,13 @@ See [LICENSE](LICENSE) file for complete terms and conditions.
 
 <div align="center">
 
-**SDK Version:** 1.2.0  
+**SDK Version:** 1.0.0  
 **License:** Proprietary - Commercial Use Only  
 **Platform:** iOS 12.0+ | Android 21+  
 **Flutter:** ≥3.0.0 | Dart ≥3.10.0  
 
 **API Base URL:** `https://api.example.com`  
-**API Version:** `v1.2.0` (Dual Pricing Support)
+**API Version:** `v1.0.0`
 
 ---
 

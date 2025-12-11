@@ -70,13 +70,7 @@ Common issues & solutions.
 - 📄 [AUTHORIZATION.md](../AUTHORIZATION.md) - Get license
 - 🔒 [SECURITY.md](../SECURITY.md) - Report vulnerabilities
 - 📝 [CHANGELOG.md](../CHANGELOG.md) - Version history
-```
-1. Owner punya beberapa license (cabang A, B, C)
-2. Setiap cabang punya cart terpisah
-3. Gunakan session-based cart per license
-4. Transaksi terpisah per cabang
-5. Laporan terpusat
-```
+
 
 ---
 
@@ -86,12 +80,6 @@ Common issues & solutions.
 SDK ini adalah **proprietary software** milik PT KGiTON. Penggunaan memerlukan lisensi resmi.
 
 📧 **Kontak**: support@kgiton.com
-
-### Version Notes
-- **v2.0+**: Session-based cart, multiple payment methods
-- **v1.x**: Legacy license-based cart (deprecated)
-
-Pastikan menggunakan versi terbaru untuk fitur lengkap.
 
 ---
 
