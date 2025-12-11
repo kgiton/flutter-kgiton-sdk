@@ -109,7 +109,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "4bc7e9fe22b1f76b5ad9416ef7aef4136686bdef"
+      resolved-ref: "5fd98e7ece8ec98f5a36391c91c7c2d3ac340b6c"
       url: "https://github.com/kuldii/flutter-ble-sdk.git"
     source: git
     version: "1.0.0"
