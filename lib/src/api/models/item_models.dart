@@ -84,18 +84,16 @@ class ItemListData {
 
 /// Create item request
 class CreateItemRequest {
-  final String licenseKey;
   final String name;
   final String unit;
   final double price;
   final double? pricePerPcs;
   final String? description;
 
-  CreateItemRequest({required this.licenseKey, required this.name, required this.unit, required this.price, this.pricePerPcs, this.description});
+  CreateItemRequest({required this.name, required this.unit, required this.price, this.pricePerPcs, this.description});
 
   Map<String, dynamic> toJson() {
     return {
-      'license_key': licenseKey,
       'name': name,
       'unit': unit,
       'price': price,
