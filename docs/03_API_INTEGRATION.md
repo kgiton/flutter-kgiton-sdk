@@ -1,404 +1,898 @@
-# API Integration
+# API Integration Guide
 
-## Initialize
+**Complete REST API reference for KGiTON backend services**
+
+> **Prerequisites**: Complete [Getting Started](01_GETTING_STARTED.md) setup and have API credentials.
+
+---
+
+## Table of Contents
+
+- [API Overview](#api-overview)
+- [Initialization](#initialization)
+- [Authentication](#authentication)
+- [License Management](#license-management)
+- [Item Management](#item-management)
+- [Cart Operations](#cart-operations)
+- [Transaction Management](#transaction-management)
+- [Error Handling](#error-handling)
+- [API Reference](#api-reference)
+
+---
+
+## API Overview
+
+### Base URL
+
+```
+https://api.example.com/api/v1
+```
+
+### Authentication
+
+The API uses **JWT (JSON Web Token)** authentication:
+- Access Token: Short-lived token for API requests
+- Refresh Token: Long-lived token for obtaining new access tokens
+
+### Response Format
+
+All API responses follow this structure:
+
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { }
+}
+```
+
+### HTTP Status Codes
+
+| Code | Meaning | Description |
+|------|---------|-------------|
+| 200 | OK | Request successful |
+| 201 | Created | Resource created successfully |
+| 400 | Bad Request | Invalid request data |
+| 401 | Unauthorized | Authentication required or token expired |
+| 403 | Forbidden | Insufficient permissions |
+| 404 | Not Found | Resource not found |
+| 422 | Validation Error | Request validation failed |
+| 500 | Server Error | Internal server error |
+
+---
+
+## Initialization
+
+### Basic Initialization
 
 ```dart
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kgiton_sdk/kgiton_sdk.dart';
 
-final prefs = await SharedPreferences.getInstance();
-final api = KgitonApiService(prefs);
+// Initialize API Service with base URL
+final api = KgitonApiService(
+  baseUrl: 'https://api.example.com/api',
+);
 
-// Custom base URL (optional)
-final api = KgitonApiService(prefs, baseUrl: 'https://your-api.com/api');
+// Load saved configuration (access/refresh tokens)
+await api.loadConfiguration();
+
+// Custom base URL
+final api = KgitonApiService(
+  baseUrl: 'https://your-api.com/api',
+);
+```
+
+### Advanced Configuration
+
+```dart
+class ApiConfig {
+  static const String productionUrl = 'https://api.example.com/api';
+  static const String stagingUrl = 'https://staging-api.example.com/api';
+  static const String developmentUrl = 'http://localhost:3000/api';
+  
+  static String getBaseUrl(String environment) {
+    switch (environment) {
+      case 'production':
+        return productionUrl;
+      case 'staging':
+        return stagingUrl;
+      default:
+        return developmentUrl;
+    }
+  }
+}
+
+// Usage
+final api = KgitonApiService(
+  prefs,
+  baseUrl: ApiConfig.getBaseUrl('production'),
+);
 ```
 
 ---
 
-## 1. Authentication
+## Authentication
 
-### Register
+### 1. Register New Owner
 
+**Endpoint**: `POST /auth/register-owner`
+
+**Request**:
 ```dart
-final result = await api.authService.register(
+final authData = await api.auth.registerOwner(
   name: 'John Doe',
   email: 'john@example.com',
-  password: 'password123',
-  licenseKey: 'your-license-key',
+  password: 'SecurePass123!',
+  licenseKey: 'KGITON-12345-ABCDE-67890-FGHIJ',
+  entityType: 'individual',
 );
+```
 
-if (result['success']) {
-  final user = result['data']['user'] as User;
-  final token = result['data']['token'] as String;
-  // Token auto-saved
+**Request Body**:
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "SecurePass123!",
+  "licenseKey": "KGITON-12345-ABCDE-67890-FGHIJ"
 }
 ```
 
-### Login
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Registration successful",
+  "data": {
+    "user": {
+      "id": 1,
+      "email": "john@example.com",
+      "name": "John Doe",
+      "role": "owner",
+      "createdAt": "2025-12-12T10:00:00Z"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
 
+**Error Codes**:
+- `422`: Validation error (email format, password length)
+- `409`: Email already exists
+- `400`: Invalid license key
+
+### 2. Login
+
+**Endpoint**: `POST /auth/login`
+
+**Request**:
 ```dart
-final result = await api.authService.login(
+final authData = await api.auth.login(
   email: 'john@example.com',
-  password: 'password123',
+  password: 'SecurePass123!',
 );
 
-if (result['success']) {
-  final user = result['data']['user'] as User;
-  // Token auto-saved
+print('Welcome, ${authData.user.email}!');
+print('Access Token: ${authData.accessToken}');
+// Tokens are automatically saved
+```
+
+**Request Body**:
+```json
+{
+  "email": "john@example.com",
+  "password": "SecurePass123!"
 }
 ```
 
-### Get Current User
-
-```dart
-final result = await api.authService.getCurrentUser();
-if (result['success']) {
-  final user = result['data'] as User;
-  print(user.name);
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "id": 1,
+      "email": "john@example.com",
+      "name": "John Doe",
+      "role": "owner"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
 }
 ```
 
-### Logout
+**Error Codes**:
+- `401`: Invalid email or password
+- `400`: Missing required fields
 
+### 3. Get Current User
+
+**Endpoint**: `GET /auth/me`
+
+**Request**:
 ```dart
-await api.authService.logout();
-// Token auto-removed
+final currentUserData = await api.auth.getCurrentUser();
+
+print('ID: ${currentUserData.user.id}');
+print('Email: ${currentUserData.user.email}');
+print('Role: ${currentUserData.profile.role}');
+print('Name: ${currentUserData.profile.name}');
 ```
 
-### Check Login
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "email": "john@example.com",
+    "name": "John Doe",
+    "role": "owner",
+    "createdAt": "2025-12-12T10:00:00Z"
+  }
+}
+```
+
+**Error Codes**:
+- `401`: Unauthorized (no token or expired token)
+
+### 4. Logout
+
+**Endpoint**: `POST /auth/logout`
+
+**Request**:
+```dart
+await api.auth.logout();
+// Tokens are automatically cleared from storage
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Logout successful"
+}
+```
+
+### Token Management
 
 ```dart
+// Check if user is logged in
+final prefs = await SharedPreferences.getInstance();
 final token = prefs.getString('auth_token');
 final isLoggedIn = token != null && token.isNotEmpty;
+
+if (!isLoggedIn) {
+  // Redirect to login
+}
+
+// Manually set token (if needed)
+prefs.setString('auth_token', 'your-token-here');
+
+// Clear token
+prefs.remove('auth_token');
 ```
 
 ---
 
-## 2. License Management
+## License Management
 
-### List My Licenses
+### 1. List My Licenses
 
+**Endpoint**: `GET /owner/licenses`
+
+**Request**:
 ```dart
-final result = await api.ownerService.listLicenses();
-if (result['success']) {
-  final licenses = (result['data'] as List).cast<License>();
-  for (var license in licenses) {
-    print('${license.licenseKey} - ${license.deviceName}');
+final licensesData = await api.owner.listOwnLicenses();
+
+for (var license in licensesData.licenses) {
+  print('License Key: ${license.licenseKey}');
+  print('Entity: ${license.entityName}');
+  print('Type: ${license.entityType}');
+  print('Expires: ${license.expiresAt}');
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "licenseKey": "KGITON-12345-ABCDE-67890-FGHIJ",
+      "deviceName": "Main Counter Scale",
+      "status": "active",
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "createdAt": "2025-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+### 2. Assign Additional License
+
+**Endpoint**: `POST /owner/licenses/assign`
+
+**Request**:
+```dart
+final license = await api.owner.assignAdditionalLicense(
+  'KGITON-NEW12-34567-89ABC-DEFGH'
+);
+
+print('License assigned successfully!');
+print('License Key: ${license.licenseKey}');
+print('Entity: ${license.entityName}');
+```
+
+**Request Body**:
+```json
+{
+  "licenseKey": "KGITON-NEW12-34567-89ABC-DEFGH"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "License assigned successfully",
+  "data": {
+    "id": 2,
+    "licenseKey": "KGITON-NEW12-34567-89ABC-DEFGH",
+    "status": "active"
   }
 }
 ```
 
-### Assign License
-
-```dart
-final result = await api.ownerService.assignLicense('new-license-key');
-if (result['success']) {
-  print('License assigned!');
-}
-```
+**Error Codes**:
+- `400`: Invalid license key format
+- `404`: License key not found
+- `409`: License already assigned
 
 ---
 
-## 3. Item Management
+## Item Management
 
-### Create Item
+### 1. Create Item
 
+**Endpoint**: `POST /items`
+
+**Request**:
 ```dart
-final result = await api.itemService.createItem(
-  name: 'Apple',
-  price: 15000,
+final item = await api.owner.createItem(
+  name: 'Organic Apple',
   unit: 'kg',
+  price: 18500,
+  pricePerPcs: 2000,
+  description: 'Fresh organic apples',
 );
 
-if (result['success']) {
-  final item = result['data'] as Item;
-  print('Created: ${item.name}');
+print('Created item ID: ${item.id}');
+print('Name: ${item.name}');
+print('Price per kg: Rp ${item.pricePerKg}');
+```
+
+**Request Body**:
+```json
+{
+  "name": "Organic Apple",
+  "price": 18500,
+  "unit": "kg",
+  "category": "Fruits",
+  "sku": "FRUIT-001"
 }
 ```
 
-### List Items
-
-```dart
-final result = await api.itemService.listItems();
-if (result['success']) {
-  final items = (result['data'] as List).cast<Item>();
-  for (var item in items) {
-    print('${item.name} - Rp ${item.price}');
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Item created successfully",
+  "data": {
+    "id": 1,
+    "name": "Organic Apple",
+    "price": 18500,
+    "unit": "kg",
+    "category": "Fruits",
+    "sku": "FRUIT-001",
+    "isActive": true,
+    "createdAt": "2025-12-12T10:00:00Z"
   }
 }
 ```
 
-### Update Item
+### 2. List Items
 
+**Endpoint**: `GET /items?page=1&limit=20`
+
+**Request**:
 ```dart
-final result = await api.itemService.updateItem(
-  itemId: 1,
-  name: 'Green Apple',
-  price: 18000,
+final itemListData = await api.owner.listItems(
+  'YOUR-LICENSE-KEY',
 );
 
-if (result['success']) {
-  print('Updated!');
+for (var item in itemListData.items) {
+  print('${item.name} - Rp ${item.pricePerKg}/kg');
+  if (item.pricePerPcs != null) {
+    print('  or Rp ${item.pricePerPcs}/pcs');
+  }
 }
 ```
 
-### Delete Item
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Organic Apple",
+      "price": 18500,
+      "unit": "kg",
+      "category": "Fruits",
+      "sku": "FRUIT-001",
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "name": "Fresh Banana",
+      "price": 12000,
+      "unit": "kg",
+      "category": "Fruits",
+      "sku": "FRUIT-002",
+      "isActive": true
+    }
+  ],
+  "pagination": {
+    "total": 50,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 3
+  }
+}
+```
 
+### 3. Get Item by ID
+
+**Endpoint**: `GET /items/:id`
+
+**Request**:
 ```dart
-final result = await api.itemService.deleteItem(1);
-if (result['success']) {
-  print('Deleted!');
+final item = await api.owner.getItemDetail('item-uuid-here');
+
+print('Item: ${item.name}');
+print('Price: Rp ${item.pricePerKg}');
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Organic Apple",
+    "price": 18500,
+    "unit": "kg",
+    "category": "Fruits",
+    "sku": "FRUIT-001",
+    "isActive": true
+  }
+}
+```
+
+### 4. Update Item
+
+**Endpoint**: `PUT /items/:id`
+
+**Request**:
+```dart
+final updatedItem = await api.owner.updateItem(
+  itemId: 'item-uuid-here',
+  name: 'Premium Organic Apple',
+  price: 22000,
+);
+
+print('Item updated successfully');
+print('New name: ${updatedItem.name}');
+```
+
+**Request Body**:
+```json
+{
+  "name": "Premium Organic Apple",
+  "price": 22000
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Item updated successfully",
+  "data": {
+    "id": 1,
+    "name": "Premium Organic Apple",
+    "price": 22000,
+    "unit": "kg",
+    "category": "Fruits"
+  }
+}
+```
+
+### 5. Delete Item (Soft Delete)
+
+**Endpoint**: `DELETE /items/:id`
+
+**Request**:
+```dart
+final success = await api.owner.deleteItem('item-uuid-here');
+
+if (success) {
+  print('Item deleted successfully');
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Item deleted successfully"
 }
 ```
 
 ---
 
-## 4. Cart Management (Session-based v2.0)
+## Cart Operations
 
-### Add to Cart
+### 1. Add to Cart
 
+**Endpoint**: `POST /cart/add`
+
+**Request**:
 ```dart
-final result = await api.cartService.addToCart(
-  itemId: 1,
-  weight: 0.5, // kg
-  pricePerUnit: 15000,
+final cartItem = await api.cart.addItemToCart(
+  AddCartRequest(
+    cartId: 'device-12345',
+    licenseKey: 'YOUR-LICENSE-KEY',
+    itemId: 'item-uuid',
+    quantity: 2.5,  // kg from scale
+  ),
 );
 
-if (result['success']) {
-  final cartItem = result['data'] as CartItem;
-  print('Added: ${cartItem.itemName}');
+print('Added: ${cartItem.item?.name}');
+print('Total: Rp ${cartItem.totalPrice}');
+```
+
+**Request Body**:
+```json
+{
+  "itemId": 1,
+  "weight": 2.5,
+  "pricePerUnit": 18500
 }
 ```
 
-### Get Cart
-
-```dart
-final result = await api.cartService.getCart();
-if (result['success']) {
-  final cart = result['data'] as Cart;
-  print('Total: Rp ${cart.totalAmount}');
-  
-  for (var item in cart.items) {
-    print('${item.itemName} - ${item.weight} kg - Rp ${item.totalPrice}');
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Item added to cart",
+  "data": {
+    "id": 1,
+    "itemId": 1,
+    "itemName": "Organic Apple",
+    "weight": 2.5,
+    "pricePerUnit": 18500,
+    "totalPrice": 46250,
+    "createdAt": "2025-12-12T10:30:00Z"
   }
 }
 ```
 
-### Update Cart Item
+### 2. Get Cart
 
+**Endpoint**: `GET /cart?cart_id=device-12345`
+
+**Request**:
 ```dart
-final result = await api.cartService.updateCartItem(
-  cartItemId: 1,
-  weight: 1.0,
+final items = await api.cart.getCartItems('device-12345');
+
+print('Cart Items: ${items.length}');
+
+for (var item in items) {
+  print('${item.item?.name} - ${item.quantity} kg - Rp ${item.totalPrice}');
+}
+
+// Get cart summary
+final summary = await api.cart.getCartSummary('device-12345');
+print('Total Amount: Rp ${summary.totalAmount}');
+print('Total Items: ${summary.totalItems}');
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "itemId": 1,
+        "itemName": "Organic Apple",
+        "weight": 2.5,
+        "pricePerUnit": 18500,
+        "totalPrice": 46250
+      },
+      {
+        "id": 2,
+        "itemId": 2,
+        "itemName": "Fresh Banana",
+        "weight": 1.0,
+        "pricePerUnit": 12000,
+        "totalPrice": 12000
+      }
+    ],
+    "totalAmount": 58250,
+    "totalWeight": 3.5,
+    "totalItems": 2
+  }
+}
+```
+
+### 3. Update Cart Item
+
+**Endpoint**: `PUT /cart/:id`
+
+**Request**:
+```dart
+final updatedItem = await api.cart.updateCartItem(
+  'cart-item-uuid',
+  UpdateCartRequest(
+    quantity: 3.0,
+  ),
 );
 
-if (result['success']) {
-  print('Updated!');
+print('Cart item updated');
+print('New quantity: ${updatedItem.quantity}');
+print('New total: Rp ${updatedItem.totalPrice}');
+```
+
+**Request Body**:
+```json
+{
+  "weight": 3.0
 }
 ```
 
-### Delete Cart Item
-
-```dart
-final result = await api.cartService.deleteCartItem(1);
-if (result['success']) {
-  print('Deleted!');
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Cart item updated",
+  "data": {
+    "id": 1,
+    "weight": 3.0,
+    "totalPrice": 55500
+  }
 }
 ```
 
-### Clear Cart
+### 4. Delete Cart Item
 
+**Endpoint**: `DELETE /cart/:id`
+
+**Request**:
 ```dart
-final result = await api.cartService.clearCart();
-if (result['success']) {
-  print('Cart cleared!');
+final success = await api.cart.deleteCartItem('cart-item-uuid');
+
+if (success) {
+  print('Item removed from cart');
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Item removed from cart"
+}
+```
+
+### 5. Clear Cart
+
+**Endpoint**: `DELETE /cart?cart_id=device-12345`
+
+**Request**:
+```dart
+final success = await api.cart.clearCart('device-12345');
+
+if (success) {
+  print('Cart cleared');
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Cart cleared"
 }
 ```
 
 ---
 
-## 5. Transaction
+## Transaction Management
 
-### Checkout
+### 1. Checkout
 
+**Endpoint**: `POST /transactions/checkout`
+
+**Request**:
 ```dart
-final result = await api.transactionService.checkout(
-  paymentMethod: 'cash', // or 'qris'
-  notes: 'Customer notes',
+// Note: Use cart.checkoutCart() instead for cart-based checkout
+// This is for direct transaction creation
+final transaction = await api.transaction.createTransaction(
+  CheckoutRequest(
+    paymentMethod: PaymentMethod.cash,
+    notes: 'Customer special request',
+  ),
 );
 
-if (result['success']) {
-  final transaction = result['data'] as Transaction;
-  print('Transaction ID: ${transaction.transactionCode}');
-  print('Total: Rp ${transaction.totalAmount}');
-  
-  if (paymentMethod == 'qris') {
-    print('QR Code: ${transaction.qrCodeUrl}');
+print('Transaction Number: ${transaction.transactionNumber}');
+print('Total: Rp ${transaction.totalAmount}');
+print('Status: ${transaction.paymentStatus}');
+
+if (transaction.paymentMethod == PaymentMethod.qris && transaction.qrisString != null) {
+  print('QRIS Code: ${transaction.qrisString}');
   }
 }
 ```
 
-### Transaction History
+**Request Body**:
+```json
+{
+  "paymentMethod": "cash",
+  "notes": "Customer special request"
+}
+```
 
-```dart
-final result = await api.transactionService.listTransactions();
-if (result['success']) {
-  final transactions = (result['data'] as List).cast<Transaction>();
-  for (var trx in transactions) {
-    print('${trx.transactionCode} - Rp ${trx.totalAmount} - ${trx.status}');
+**Response (Cash)**:
+```json
+{
+  "success": true,
+  "message": "Checkout successful",
+  "data": {
+    "id": 1,
+    "transactionCode": "TRX-20251212-0001",
+    "totalAmount": 58250,
+    "paymentMethod": "cash",
+    "status": "completed",
+    "notes": "Customer special request",
+    "items": [
+      {
+        "itemName": "Organic Apple",
+        "weight": 2.5,
+        "pricePerUnit": 18500,
+        "totalPrice": 46250
+      }
+    ],
+    "createdAt": "2025-12-12T10:45:00Z"
   }
 }
 ```
 
-### Transaction Detail
-
-```dart
-final result = await api.transactionService.getTransactionDetail(1);
-if (result['success']) {
-  final transaction = result['data'] as Transaction;
-  print('Code: ${transaction.transactionCode}');
-  print('Status: ${transaction.status}');
-  print('Items: ${transaction.items.length}');
+**Response (QRIS)**:
+```json
+{
+  "success": true,
+  "message": "QRIS payment initiated",
+  "data": {
+    "id": 1,
+    "transactionCode": "TRX-20251212-0001",
+    "totalAmount": 58250,
+    "paymentMethod": "qris",
+    "status": "pending",
+    "qrCodeUrl": "https://qr.example.com/trx/abc123...",
+    "expiresAt": "2025-12-12T11:00:00Z"
+  }
 }
 ```
 
----
+### 2. Get Transaction History
 
-## Complete Example
+**Endpoint**: `GET /transactions?page=1&limit=20&status=completed`
 
+**Request**:
 ```dart
-import 'package:flutter/material.dart';
-import 'package:kgiton_sdk/kgiton_sdk.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+final transactionData = await api.transaction.listTransactions(
+  page: 1,
+  limit: 20,
+  status: 'completed',  // optional filter
+);
 
-class APIPage extends StatefulWidget {
-  @override
-  State<APIPage> createState() => _APIPageState();
+for (var trx in transactionData.data) {
+  print('${trx.transactionNumber} - Rp ${trx.totalAmount} - ${trx.paymentStatus}');
 }
 
-class _APIPageState extends State<APIPage> {
-  late KgitonApiService api;
-  List<Item> items = [];
-  Cart? cart;
-  
-  @override
-  void initState() {
-    super.initState();
-    initAPI();
-  }
-  
-  Future<void> initAPI() async {
-    final prefs = await SharedPreferences.getInstance();
-    api = KgitonApiService(prefs);
-    
-    // Login
-    final loginResult = await api.authService.login(
-      email: 'test@example.com',
-      password: 'password',
-    );
-    
-    if (loginResult['success']) {
-      loadItems();
-      loadCart();
+print('Total: ${transactionData.totalCount}');
+print('Page: ${transactionData.currentPage}/${transactionData.totalPages}');
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "transactionCode": "TRX-20251212-0001",
+      "totalAmount": 58250,
+      "paymentMethod": "cash",
+      "status": "completed",
+      "createdAt": "2025-12-12T10:45:00Z"
     }
+  ],
+  "pagination": {
+    "total": 150,
+    "page": 1,
+    "limit": 20
   }
-  
-  Future<void> loadItems() async {
-    final result = await api.itemService.listItems();
-    if (result['success']) {
-      setState(() {
-        items = (result['data'] as List).cast<Item>();
-      });
-    }
+}
+```
+
+### 3. Get Transaction Detail
+
+**Endpoint**: `GET /transactions/:id`
+
+**Request**:
+```dart
+final transactionDetail = await api.transaction.getTransactionDetail(
+  'transaction-uuid-here',
+);
+
+print('Number: ${transactionDetail.transaction.transactionNumber}');
+print('Status: ${transactionDetail.transaction.paymentStatus}');
+print('Total: Rp ${transactionDetail.transaction.totalAmount}');
+
+for (var item in transactionDetail.items) {
+  print('- ${item.item?.name}: ${item.quantity} kg @ Rp ${item.unitPrice}');
   }
-  
-  Future<void> loadCart() async {
-    final result = await api.cartService.getCart();
-    if (result['success']) {
-      setState(() {
-        cart = result['data'] as Cart;
-      });
-    }
-  }
-  
-  Future<void> addToCart(Item item, double weight) async {
-    final result = await api.cartService.addToCart(
-      itemId: item.id,
-      weight: weight,
-      pricePerUnit: item.price,
-    );
-    
-    if (result['success']) {
-      loadCart();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Added to cart!')),
-      );
-    }
-  }
-  
-  Future<void> checkout() async {
-    final result = await api.transactionService.checkout(
-      paymentMethod: 'cash',
-    );
-    
-    if (result['success']) {
-      final trx = result['data'] as Transaction;
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text('Success'),
-          content: Text('Transaction: ${trx.transactionCode}'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                loadCart();
-              },
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('API Integration'),
-        actions: [
-          IconButton(
-            icon: Badge(
-              label: Text(cart?.items.length.toString() ?? '0'),
-              child: Icon(Icons.shopping_cart),
-            ),
-            onPressed: () {
-              // Show cart
-            },
-          ),
-        ],
-      ),
-      body: ListView.builder(
-        itemCount: items.length,
-        itemBuilder: (ctx, i) {
-          final item = items[i];
-          return ListTile(
-            title: Text(item.name),
-            subtitle: Text('Rp ${item.price} / ${item.unit}'),
-            trailing: ElevatedButton(
-              onPressed: () => addToCart(item, 1.0),
-              child: Text('Add'),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: cart != null && cart!.items.isNotEmpty ? checkout : null,
-        icon: Icon(Icons.payment),
-        label: Text('Checkout'),
-      ),
-    );
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "transactionCode": "TRX-20251212-0001",
+    "totalAmount": 58250,
+    "paymentMethod": "cash",
+    "status": "completed",
+    "notes": "Customer special request",
+    "items": [
+      {
+        "id": 1,
+        "itemId": 1,
+        "itemName": "Organic Apple",
+        "weight": 2.5,
+        "pricePerUnit": 18500,
+        "totalPrice": 46250
+      },
+      {
+        "id": 2,
+        "itemId": 2,
+        "itemName": "Fresh Banana",
+        "weight": 1.0,
+        "pricePerUnit": 12000,
+        "totalPrice": 12000
+      }
+    ],
+    "createdAt": "2025-12-12T10:45:00Z",
+    "updatedAt": "2025-12-12T10:45:30Z"
   }
 }
 ```
@@ -407,26 +901,212 @@ class _APIPageState extends State<APIPage> {
 
 ## Error Handling
 
+### Error Response Format
+
+```json
+{
+  "success": false,
+  "message": "Error message here",
+  "errors": {
+    "field": ["Validation error message"]
+  }
+}
+```
+
+### Exception Handling
+
 ```dart
+import 'package:kgiton_sdk/kgiton_sdk.dart';
+
 try {
-  final result = await api.itemService.createItem(
+  final item = await api.owner.createItem(
     name: 'Apple',
+    unit: 'kg',
     price: 15000,
   );
   
-  if (!result['success']) {
-    // Handle API error
-    print('Error: ${result['message']}');
-  }
+  print('Success! Item created: ${item.name}');
+} on KgitonAuthenticationException catch (e) {
+  print('Authentication Error: $e');
+  // Redirect to login
+} on KgitonValidationException catch (e) {
+  print('Validation Error: $e');
+  // Show validation errors to user
+} on KgitonNetworkException catch (e) {
+  print('Network Error: $e');
+  // Check internet connection
 } catch (e) {
-  // Handle network/exception error
-  print('Exception: $e');
+  print('Unknown Error: $e');
+}
+```
+
+### Common Error Scenarios
+
+**401 Unauthorized - Token Expired**:
+```dart
+if (result['message'].contains('token expired')) {
+  // Logout and redirect to login
+  await api.auth.logout();
+  Navigator.pushReplacementNamed(context, '/login');
+}
+```
+
+**422 Validation Error**:
+```dart
+if (result['errors'] != null) {
+  final errors = result['errors'] as Map<String, dynamic>;
+  errors.forEach((field, messages) {
+    print('$field: ${messages.join(', ')}');
+  });
+}
+```
+
+**Network Error**:
+```dart
+try {
+  final itemListData = await api.owner.listItems(licenseKey);
+} catch (e) {
+  if (e.toString().contains('SocketException')) {
+    print('No internet connection');
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Connection Error'),
+        content: Text('Please check your internet connection'),
+      ),
+    );
+  }
 }
 ```
 
 ---
 
-## Next
+## API Reference
 
-- [Cart & Transaction](04_CART_TRANSACTION.md)
-- [Troubleshooting](05_TROUBLESHOOTING.md)
+### Authentication Service
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `register()` | POST /auth/register-owner | Register new owner |
+| `login()` | POST /auth/login | User login |
+| `getCurrentUser()` | GET /auth/me | Get current user info |
+| `logout()` | POST /auth/logout | User logout |
+
+### Owner Service
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `listLicenses()` | GET /owner/licenses | List user's licenses |
+| `assignLicense()` | POST /owner/licenses/assign | Assign new license |
+
+### Item Service
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `createItem()` | POST /items | Create new item |
+| `listItems()` | GET /items | List all items |
+| `getItem()` | GET /items/:id | Get item details |
+| `updateItem()` | PUT /items/:id | Update item |
+| `deleteItem()` | DELETE /items/:id | Delete item (soft) |
+
+### Cart Service
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `addToCart()` | POST /cart/add | Add item to cart |
+| `getCart()` | GET /cart | Get current cart |
+| `updateCartItem()` | PUT /cart/:id | Update cart item |
+| `deleteCartItem()` | DELETE /cart/:id | Remove from cart |
+| `clearCart()` | DELETE /cart | Clear entire cart |
+
+### Transaction Service
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `checkout()` | POST /transactions/checkout | Process checkout |
+| `listTransactions()` | GET /transactions | Get transaction history |
+| `getTransactionDetail()` | GET /transactions/:id | Get transaction details |
+
+---
+
+## Best Practices
+
+### 1. Token Management
+
+```dart
+class AuthManager {
+  final KgitonApiService api;
+  
+  AuthManager(this.api);
+  
+  Future<bool> ensureAuthenticated() async {
+    try {
+      await api.auth.getCurrentUser();
+      return true;
+    } catch (e) {
+      // Token expired or invalid
+      return false;
+    }
+  }
+  
+  Future<void> refreshIfNeeded() async {
+    if (!await ensureAuthenticated()) {
+      // Redirect to login
+    }
+  }
+}
+```
+
+### 2. Pagination
+
+```dart
+Future<List<Item>> loadAllItems() async {
+  List<Item> allItems = [];
+  int page = 1;
+  bool hasMore = true;
+  
+  // Note: SDK listItems doesn't support pagination currently
+  // This gets all items for the license
+  final itemListData = await api.owner.listItems(
+    licenseKey,
+  );
+  
+  return itemListData.items;
+}
+```
+
+### 3. Retry Logic
+
+```dart
+Future<T?> retryRequest<T>(
+  Future<Map<String, dynamic>> Function() request,
+  {int maxRetries = 3}
+) async {
+  for (int i = 0; i < maxRetries; i++) {
+    try {
+      final result = await request();
+      if (result['success']) {
+        return result['data'] as T;
+      }
+    } catch (e) {
+      if (i == maxRetries - 1) rethrow;
+      await Future.delayed(Duration(seconds: 2 * (i + 1)));
+    }
+  }
+  return null;
+}
+```
+
+---
+
+## Next Steps
+
+- **[Cart & Transaction Guide](04_CART_TRANSACTION.md)** - Complete cart and payment workflows
+- **[Troubleshooting](05_TROUBLESHOOTING.md)** - Error codes and common issues
+- **[Example App](../example/kgiton_apps/)** - Full implementation reference
+
+---
+
+**Copyright © 2025 PT KGiTON. All Rights Reserved.**
+
+For support, contact: support@kgiton.com

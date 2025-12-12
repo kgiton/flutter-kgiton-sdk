@@ -1,20 +1,161 @@
-# Device Integration
+# Device Integration Guide
 
-## 1. Request Permissions
+**Complete guide for integrating KGiTON BLE scale devices into your Flutter application.**
+
+> **Prerequisites**: Complete [Getting Started](01_GETTING_STARTED.md) setup before proceeding.
+
+---
+
+## Table of Contents
+
+- [Permission Management](#permission-management)
+- [Device Scanning](#device-scanning)
+- [Connection & Authentication](#connection--authentication)
+- [Weight Data Streaming](#weight-data-streaming)
+- [Device Control](#device-control)
+- [Connection State Management](#connection-state-management)
+- [Best Practices](#best-practices)
+- [Complete Examples](#complete-examples)
+
+---
+
+## Permission Management
+
+### Overview
+
+BLE operations require specific permissions that vary by platform and OS version:
+
+| Platform | Permissions Required | Notes |
+|----------|---------------------|-------|
+| **Android API 21-28** | BLUETOOTH, BLUETOOTH_ADMIN | Location not required |
+| **Android API 29-30** | + ACCESS_FINE_LOCATION | Location Service must be ON |
+| **Android API 31+** | BLUETOOTH_SCAN, BLUETOOTH_CONNECT | Location optional |
+| **iOS 12+** | Bluetooth Always Usage | Declared in Info.plist |
+
+### 1. Request Permissions
 
 ```dart
 import 'package:kgiton_sdk/kgiton_sdk.dart';
 
-// Simple
+// Simple permission request
 final granted = await PermissionHelper.requestBLEPermissions();
 if (!granted) {
+  // User denied permissions - open settings
   await PermissionHelper.openAppSettings();
+  return;
+}
+
+print('✅ BLE permissions granted');
+```
+
+### Advanced Permission Handling
+
+```dart
+import 'package:kgiton_sdk/kgiton_sdk.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class PermissionManager {
+  /// Request all required permissions with detailed status
+  static Future<bool> requestAllPermissions() async {
+    // Check Bluetooth availability
+    if (!await _isBluetoothAvailable()) {
+      print('❌ Bluetooth not available on this device');
+      return false;
+    }
+    
+    // Request BLE permissions via SDK helper
+    final bleGranted = await PermissionHelper.requestBLEPermissions();
+    
+    if (!bleGranted) {
+      print('❌ BLE permissions denied');
+      return false;
+    }
+    
+    // Android 10-11: Check location service
+    if (Platform.isAndroid) {
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      if (androidInfo.version.sdkInt >= 29 && androidInfo.version.sdkInt <= 30) {
+        final locationEnabled = await Permission.location.serviceStatus.isEnabled;
+        if (!locationEnabled) {
+          print('⚠️ Location service must be enabled for Android 10-11');
+          // Guide user to enable location
+          return false;
+        }
+      }
+    }
+    
+    print('✅ All permissions granted');
+    return true;
+  }
+  
+  /// Check if Bluetooth hardware is available
+  static Future<bool> _isBluetoothAvailable() async {
+    // Platform-specific check
+    return true; // Implement platform channel check
+  }
+  
+  /// Show permission explanation dialog
+  static Future<bool> showPermissionRationale(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Bluetooth Permission Required'),
+        content: Text(
+          'This app needs Bluetooth permission to connect to your KGiTON scale device '
+          'and receive real-time weight measurements.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Grant Permission'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+}
+```
+
+### Permission Status Check
+
+```dart
+import 'package:permission_handler/permission_handler.dart';
+
+Future<void> checkPermissionStatus() async {
+  // Bluetooth Scan
+  final scanStatus = await Permission.bluetoothScan.status;
+  print('Bluetooth Scan: ${scanStatus.isGranted ? '✅' : '❌'}');
+  
+  // Bluetooth Connect
+  final connectStatus = await Permission.bluetoothConnect.status;
+  print('Bluetooth Connect: ${connectStatus.isGranted ? '✅' : '❌'}');
+  
+  // Location (Android 10-11)
+  if (Platform.isAndroid) {
+    final locationStatus = await Permission.location.status;
+    print('Location: ${locationStatus.isGranted ? '✅' : '❌'}');
+  }
 }
 ```
 
 ---
 
-## 2. Scan Devices
+## Device Scanning
+
+### Overview
+
+Device scanning discovers nearby KGiTON scale devices using BLE advertising. The SDK provides:
+
+- **Auto-stop scanning**: Stops when device is found (battery efficient)
+- **RSSI filtering**: Only show devices with good signal strength
+- **Timeout handling**: Prevents indefinite scanning
+- **Real-time updates**: Stream-based device list
+
+### 2. Basic Scanning
 
 ```dart
 final scale = KGiTONScaleService();
@@ -435,8 +576,312 @@ class _DevicePageState extends State<DevicePage> {
 
 ---
 
-## Next
+## Best Practices
 
-- [API Integration](03_API_INTEGRATION.md)
-- [Cart & Transaction](04_CART_TRANSACTION.md)
-- [Troubleshooting](05_TROUBLESHOOTING.md)
+### 1. Resource Management
+
+```dart
+class ScaleManager {
+  KGiTONScaleService? _service;
+  
+  KGiTONScaleService get service {
+    _service ??= KGiTONScaleService();
+    return _service!;
+  }
+  
+  void dispose() {
+    _service?.dispose();
+    _service = null;
+  }
+}
+```
+
+### 2. Error Handling
+
+```dart
+Future<void> safeConnect(String deviceId, String licenseKey) async {
+  try {
+    final response = await scale.connectWithLicenseKey(
+      deviceId: deviceId,
+      licenseKey: licenseKey,
+    );
+    
+    if (response.success) {
+      print('✅ Connected successfully');
+    } else {
+      print('❌ Connection failed: ${response.message}');
+      // Handle specific errors
+      if (response.message.contains('license')) {
+        // Invalid license key
+      } else if (response.message.contains('timeout')) {
+        // Connection timeout - retry?
+      }
+    }
+  } catch (e) {
+    print('💥 Exception: $e');
+    // Handle exception
+  }
+}
+```
+
+### 3. Connection Retry Logic
+
+```dart
+Future<bool> connectWithRetry({
+  required String deviceId,
+  required String licenseKey,
+  int maxRetries = 3,
+}) async {
+  for (int i = 0; i < maxRetries; i++) {
+    try {
+      final response = await scale.connectWithLicenseKey(
+        deviceId: deviceId,
+        licenseKey: licenseKey,
+      );
+      
+      if (response.success) {
+        print('✅ Connected on attempt ${i + 1}');
+        return true;
+      }
+      
+      if (i < maxRetries - 1) {
+        print('⏳ Retry ${i + 1}/$maxRetries in 2 seconds...');
+        await Future.delayed(Duration(seconds: 2));
+      }
+    } catch (e) {
+      print('❌ Attempt ${i + 1} failed: $e');
+    }
+  }
+  
+  print('💥 Failed after $maxRetries attempts');
+  return false;
+}
+```
+
+### 4. Weight Data Validation
+
+```dart
+StreamSubscription<WeightData>? _weightSubscription;
+
+void listenToWeight() {
+  _weightSubscription = scale.weightStream.listen(
+    (weight) {
+      // Validate weight data
+      if (weight.value < 0) {
+        print('⚠️ Invalid negative weight');
+        return;
+      }
+      
+      if (weight.value > 500) {
+        print('⚠️ Weight exceeds maximum capacity');
+        return;
+      }
+      
+      // Only use stable weights for transactions
+      if (weight.isStable) {
+        processWeight(weight.value);
+      }
+    },
+    onError: (error) {
+      print('❌ Weight stream error: $error');
+    },
+  );
+}
+
+void dispose() {
+  _weightSubscription?.cancel();
+}
+```
+
+### 5. Background/Foreground Handling
+
+```dart
+class ScaleLifecycleManager extends WidgetsBindingObserver {
+  final KGiTONScaleService scale;
+  
+  ScaleLifecycleManager(this.scale) {
+    WidgetsBinding.instance.addObserver(this);
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+        // App in background - stop scanning to save battery
+        scale.stopScan();
+        break;
+      case AppLifecycleState.resumed:
+        // App resumed - check connection
+        _checkConnection();
+        break;
+      default:
+        break;
+    }
+  }
+  
+  Future<void> _checkConnection() async {
+    // Verify connection still active
+    final currentState = await scale.connectionStateStream.first;
+    if (currentState == ScaleConnectionState.disconnected) {
+      print('⚠️ Connection lost while in background');
+      // Attempt reconnection?
+    }
+  }
+  
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+  }
+}
+```
+
+### 6. Memory Management
+
+```dart
+class WeightMonitor {
+  StreamSubscription? _weightSub;
+  StreamSubscription? _stateSub;
+  StreamSubscription? _devicesSub;
+  
+  void startMonitoring(KGiTONScaleService scale) {
+    _weightSub = scale.weightStream.listen((weight) { });
+    _stateSub = scale.connectionStateStream.listen((state) { });
+    _devicesSub = scale.devicesStream.listen((devices) { });
+  }
+  
+  void stopMonitoring() {
+    _weightSub?.cancel();
+    _stateSub?.cancel();
+    _devicesSub?.cancel();
+  }
+}
+```
+
+---
+
+## API Reference
+
+### KGiTONScaleService
+
+#### Methods
+
+| Method | Parameters | Returns | Description |
+|--------|-----------|---------|-------------|
+| `scanForDevices` | `timeout: Duration?` | `Future<void>` | Start BLE device scan |
+| `stopScan` | - | `void` | Stop active scan |
+| `connectWithLicenseKey` | `deviceId: String, licenseKey: String` | `Future<ControlResponse>` | Connect and authenticate |
+| `disconnect` | - | `Future<void>` | Disconnect from device |
+| `sendBuzzerCommand` | `command: String` | `Future<void>` | Control device buzzer |
+| `dispose` | - | `void` | Clean up resources |
+
+#### Streams
+
+| Stream | Type | Description |
+|--------|------|-------------|
+| `devicesStream` | `Stream<List<ScaleDevice>>` | Discovered devices |
+| `weightStream` | `Stream<WeightData>` | Real-time weight data (~10 Hz) |
+| `connectionStateStream` | `Stream<ScaleConnectionState>` | Connection status |
+
+#### Models
+
+**ScaleDevice**
+```dart
+class ScaleDevice {
+  final String deviceId;      // e.g., "KGITON_ABC123"
+  final String name;          // Device name
+  final int rssi;             // Signal strength
+}
+```
+
+**WeightData**
+```dart
+class WeightData {
+  final double value;         // Weight in kg
+  final String unit;          // "kg" or "g"
+  final bool isStable;        // Stable reading?
+  final String displayWeight; // Formatted string
+}
+```
+
+**ScaleConnectionState**
+```dart
+enum ScaleConnectionState {
+  disconnected,    // Not connected
+  connecting,      // BLE connection in progress
+  authenticating,  // License verification
+  connected,       // Fully connected and ready
+}
+```
+
+**ControlResponse**
+```dart
+class ControlResponse {
+  final bool success;    // Operation succeeded?
+  final String message;  // Status or error message
+}
+```
+
+---
+
+## Troubleshooting
+
+### Device Not Found
+
+**Problem**: Scan doesn't find device
+
+**Solutions**:
+1. Ensure device is powered on and in pairing mode
+2. Check distance < 10 meters
+3. Verify permissions granted
+4. Android 10-11: Enable Location Service
+5. Try longer scan timeout (15-20 seconds)
+
+### Connection Timeout
+
+**Problem**: Connection attempt times out
+
+**Solutions**:
+1. Verify license key is correct (uppercase, no spaces)
+2. Ensure device not connected to another phone
+3. Restart device
+4. Move closer to device
+5. Check Bluetooth is enabled
+
+### Weight Data Not Streaming
+
+**Problem**: Connected but no weight updates
+
+**Solutions**:
+1. Verify connection state is `connected`
+2. Check weight stream subscription is active
+3. Place weight on scale to trigger reading
+4. Restart connection
+
+### Permission Denied
+
+**Problem**: BLE permissions denied
+
+**Solutions**:
+1. Request permissions before scanning
+2. Explain permission purpose to user
+3. Guide user to app settings
+4. Show permission rationale dialog
+
+---
+
+## Next Steps
+
+### Continue Learning
+
+- **[API Integration](03_API_INTEGRATION.md)** - Backend integration, authentication, item management
+- **[Cart & Transaction](04_CART_TRANSACTION.md)** - Shopping cart, checkout, payments
+- **[Troubleshooting](05_TROUBLESHOOTING.md)** - Error codes, common issues, debugging
+
+### Example Code
+
+- **[Complete Example App](../example/kgiton_apps/)** - Full reference implementation
+
+---
+
+**Copyright © 2025 PT KGiTON. All Rights Reserved.**
+
+For support, contact: support@kgiton.com
