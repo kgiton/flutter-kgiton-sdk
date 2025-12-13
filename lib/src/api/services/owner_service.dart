@@ -266,7 +266,7 @@ class KgitonOwnerService {
   /// - [KgitonAuthorizationException] if item doesn't belong to owner
   /// - [KgitonApiException] for other errors
   Future<bool> deleteItem(String itemId) async {
-    final response = await _client.delete(KgitonApiEndpoints.deletePermanentItem(itemId), requiresAuth: true);
+    final response = await _client.delete(KgitonApiEndpoints.deleteItem(itemId), requiresAuth: true);
 
     if (!response.success) {
       throw Exception('Failed to delete item: ${response.message}');
@@ -333,7 +333,7 @@ class KgitonOwnerService {
   /// - [KgitonApiException] for other errors
   Future<DeleteItemsResponse> deleteAllItems() async {
     final response = await _client.delete<DeleteItemsResponse>(
-      KgitonApiEndpoints.deleteAllItemsPermanent,
+      KgitonApiEndpoints.deleteAllItems,
       requiresAuth: true,
       fromJsonT: (json) => DeleteItemsResponse.fromJson(json),
     );

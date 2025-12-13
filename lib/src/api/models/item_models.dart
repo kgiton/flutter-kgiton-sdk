@@ -7,7 +7,6 @@ class Item {
   final double price;
   final double? pricePerPcs;
   final String? description;
-  final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,7 +18,6 @@ class Item {
     required this.price,
     this.pricePerPcs,
     this.description,
-    required this.isActive,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -33,7 +31,6 @@ class Item {
       price: ((json['price'] as num?) ?? 0).toDouble(),
       pricePerPcs: (json['price_per_pcs'] as num?)?.toDouble(),
       description: json['description'] as String?,
-      isActive: (json['is_active'] as bool?) ?? true,
       createdAt: DateTime.parse((json['created_at'] as String?) ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse((json['updated_at'] as String?) ?? DateTime.now().toIso8601String()),
     );
@@ -48,7 +45,6 @@ class Item {
       'price': price,
       if (pricePerPcs != null) 'price_per_pcs': pricePerPcs,
       if (description != null) 'description': description,
-      'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

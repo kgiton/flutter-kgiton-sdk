@@ -397,7 +397,6 @@ print('Price per kg: Rp ${item.pricePerKg}');
     "unit": "kg",
     "category": "Fruits",
     "sku": "FRUIT-001",
-    "isActive": true,
     "createdAt": "2025-12-12T10:00:00Z"
   }
 }
@@ -432,8 +431,7 @@ for (var item in itemListData.items) {
       "price": 18500,
       "unit": "kg",
       "category": "Fruits",
-      "sku": "FRUIT-001",
-      "isActive": true
+      "sku": "FRUIT-001"
     },
     {
       "id": 2,
@@ -441,8 +439,7 @@ for (var item in itemListData.items) {
       "price": 12000,
       "unit": "kg",
       "category": "Fruits",
-      "sku": "FRUIT-002",
-      "isActive": true
+      "sku": "FRUIT-002"
     }
   ],
   "pagination": {
@@ -476,8 +473,7 @@ print('Price: Rp ${item.pricePerKg}');
     "price": 18500,
     "unit": "kg",
     "category": "Fruits",
-    "sku": "FRUIT-001",
-    "isActive": true
+    "sku": "FRUIT-001"
   }
 }
 ```
@@ -521,13 +517,14 @@ print('New name: ${updatedItem.name}');
 }
 ```
 
-### 5. Delete Item (Permanent Delete)
+### 5. Delete Item (Permanent)
 
-**Endpoint**: `DELETE /items/:id/permanent`
+**Endpoint**: `DELETE /items/:id`
 
 **Request**:
 ```dart
 // ⚠️ WARNING: This permanently deletes the item from database
+// This action CANNOT be undone!
 final success = await api.owner.deleteItem('item-uuid-here');
 
 if (success) {
@@ -539,14 +536,16 @@ if (success) {
 ```json
 {
   "success": true,
-  "message": "Item permanently deleted"
+  "message": "Item deleted successfully"
 }
 ```
 
 **Important Notes**:
-- This performs a **permanent delete** (hard delete)
+- All delete operations are now **permanent** (hard delete)
 - Deleted items **cannot be recovered**
-- Always show confirmation dialog to users before calling this method
+- No soft delete functionality - items are removed from database
+- Always show strong confirmation dialog to users before calling this method
+- Consider implementing typed confirmation (e.g., "DELETE" keyword) for critical operations
 
 ### 6. Delete All Items (Permanent Delete)
 
@@ -1150,7 +1149,8 @@ try {
 | `listItems()` | GET /items | List all items |
 | `getItem()` | GET /items/:id | Get item details |
 | `updateItem()` | PUT /items/:id | Update item |
-| `deleteItem()` | DELETE /items/:id | Delete item (soft) |
+| `deleteItem()` | DELETE /items/:id | Delete item (⚠️ permanent) |
+| `deleteAllItems()` | DELETE /items | Delete all items (⚠️ permanent) |
 
 ### Cart Service
 

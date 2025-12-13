@@ -81,17 +81,13 @@ class KgitonApiEndpoints {
   /// PUT /v1/items/:id
   static String updateItem(String id) => '/items/$id';
 
-  /// Delete item (soft delete - set is_active = false)
+  /// Permanently delete single item (cannot be undone)
   /// DELETE /v1/items/:id
   static String deleteItem(String id) => '/items/$id';
 
-  /// Permanently delete item (hard delete - remove from database)
-  /// DELETE /v1/items/:id/permanent
-  static String deletePermanentItem(String id) => '/items/$id/permanent';
-
-  /// Permanently delete all items (hard delete - remove all from database)
-  /// DELETE /v1/items/permanent
-  static const String deleteAllItemsPermanent = '/items/permanent';
+  /// Permanently delete all items (cannot be undone)
+  /// DELETE /v1/items
+  static const String deleteAllItems = '/items';
 
   // ============================================================================
   // TRANSACTION ENDPOINTS (Owner)
