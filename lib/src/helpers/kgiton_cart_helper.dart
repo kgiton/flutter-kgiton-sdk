@@ -178,6 +178,43 @@ class KgitonCartHelper {
   }
 
   // ============================================
+  // LICENSE-BASED OPERATIONS (Multi-Branch Support)
+  // ============================================
+
+  /// Get all cart items for a specific license key
+  ///
+  /// Useful for multi-branch owners to view cart items per license
+  ///
+  /// Returns map with:
+  /// - success: bool
+  /// - message: String (if error)
+  /// - data: List<CartItem> (if success)
+  Future<Map<String, dynamic>> getItemsByLicenseKey(String licenseKey) async {
+    try {
+      final items = await _cartService.getCartItemsByLicenseKey(licenseKey);
+      return {'success': true, 'data': items};
+    } catch (e) {
+      return {'success': false, 'message': 'Gagal mengambil cart by license: ${e.toString()}', 'data': <CartItem>[]};
+    }
+  }
+
+  /// Clear all cart items for a specific license key
+  ///
+  /// Useful for multi-branch owners to clear cart per license
+  ///
+  /// Returns map with:
+  /// - success: bool
+  /// - message: String
+  Future<Map<String, dynamic>> clearCartByLicenseKey(String licenseKey) async {
+    try {
+      await _cartService.clearCartByLicenseKey(licenseKey);
+      return {'success': true, 'message': 'Cart berhasil dikosongkan untuk license ini'};
+    } catch (e) {
+      return {'success': false, 'message': 'Gagal mengosongkan cart: ${e.toString()}'};
+    }
+  }
+
+  // ============================================
   // CHECKOUT
   // ============================================
 

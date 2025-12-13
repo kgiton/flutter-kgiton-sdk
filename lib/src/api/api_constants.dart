@@ -149,12 +149,12 @@ class KgitonApiEndpoints {
   /// POST /v1/cart/:cartId/checkout
   static String checkoutCart(String cartId) => '/cart/$cartId/checkout';
 
-  /// Deprecated: Use getCartByCartId instead
-  @Deprecated('Use getCartByCartId instead. Cart is now session-based (cart_id).')
+  /// Get all cart items by license key (NEW endpoint for multi-branch support)
+  /// GET /v1/cart/license/:licenseKey
   static String getCartByLicenseKey(String licenseKey) => '/cart/license/$licenseKey';
 
-  /// Deprecated: Use deleteCartByCartId instead
-  @Deprecated('Use deleteCartByCartId instead. Cart is now session-based (cart_id).')
+  /// Clear all cart items by license key (NEW endpoint for multi-branch support)
+  /// DELETE /v1/cart/license/:licenseKey
   static String deleteCartByLicenseKey(String licenseKey) => '/cart/license/$licenseKey';
 }
 

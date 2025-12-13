@@ -73,6 +73,9 @@ class KgitonOwnerService {
   /// Items are associated with the authenticated owner (via owner_id).
   /// The backend will automatically set the owner_id from the JWT token.
   ///
+  /// **IMPORTANT:** Items must be linked to a license_key for proper multi-branch tracking.
+  ///
+  /// [licenseKey] - The license key to associate the item with (REQUIRED)
   /// [name] - Item name
   /// [unit] - Unit of measurement (e.g., 'kg', 'pcs', 'box')
   /// [price] - Item price
@@ -83,10 +86,24 @@ class KgitonOwnerService {
   ///
   /// Throws:
   /// - [KgitonAuthenticationException] if not authenticated
-  /// - [KgitonValidationException] if validation fails
+  /// - [KgitonValidationException] if validation fails or license_key is invalid
   /// - [KgitonApiException] for other errors
-  Future<Item> createItem({required String name, required String unit, required double price, double? pricePerPcs, String? description}) async {
-    final request = CreateItemRequest(name: name, unit: unit, price: price, pricePerPcs: pricePerPcs, description: description);
+  Future<Item> createItem({
+    required String licenseKey,
+    required String name,
+    required String unit,
+    required double price,
+    double? pricePerPcs,
+    String? description,
+  }) async {
+    final request = CreateItemRequest(
+      licenseKey: licenseKey,
+      name: name,
+      unit: unit,
+      price: price,
+      pricePerPcs: pricePerPcs,
+      description: description,
+    );
 
     final response = await _client.post<Item>(
       KgitonApiEndpoints.createItem,

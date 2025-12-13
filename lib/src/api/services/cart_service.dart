@@ -395,25 +395,82 @@ class KgitonCartService {
   // DEPRECATED METHODS (for backwards compatibility)
   // ============================================================================
 
-  /// @deprecated Use [getCartItems] with cartId instead
-  @Deprecated('Use getCartItems(cartId) instead. Cart is now session-based (cart_id).')
+  /// Get all cart items for a specific license key
+  ///
+  /// **NEW ENDPOINT**: Retrieve all cart items for a specific license key.
+  /// This is useful for multi-branch owners to view cart items per license.
+  ///
+  /// [licenseKey] - The license key to filter cart items
+  ///
+  /// Returns list of [CartItem] with item details and stored prices included
+  ///
+  /// Note: Results are sorted by created_at descending (newest first)
+  ///
+  /// Example:
+  /// ```dart
+  /// // Get cart items for a specific license
+  /// final items = await cartService.getCartItemsByLicenseKey('ABC123');
+  /// ```
+  ///
+  /// Throws:
+  /// - [KgitonAuthenticationException] if not authenticated
+  /// - [KgitonApiException] for other errors
   Future<List<CartItem>> getCartItemsByLicenseKey(String licenseKey) async {
-    // For backwards compatibility, try to get cart items
-    // However, this may not work as expected since cart is now cart_id based
-    throw KgitonApiException(
-      message:
-          'getCartItemsByLicenseKey is deprecated. Use getCartItems(cartId) instead. '
-          'Cart is now session-based (cart_id) not license-based.',
+    final endpoint = KgitonApiEndpoints.getCartByLicenseKey(licenseKey);
+
+    final response = await _client.get<List<CartItem>>(
+      endpoint,
+      requiresAuth: true,
+      fromJsonT: (json) {
+        if (json is List) {
+          return json.map((e) => CartItem.fromJson(e as Map<String, dynamic>)).toList();
+        }
+        throw KgitonApiException(message: 'Invalid response format for cart items');
+      },
     );
+
+    if (!response.success) {
+      throw KgitonApiException(message: 'Failed to get cart items by license key: ${response.message}');
+    }
+
+    return response.data ?? [];
   }
 
-  /// @deprecated Use [clearCart] with cartId instead
-  @Deprecated('Use clearCart(cartId) instead. Cart is now session-based (cart_id).')
+  /// Clear all cart items for a specific license key
+  ///
+  /// **NEW ENDPOINT**: Delete all cart items for a specific license key.
+  /// This is useful for multi-branch owners to clear cart items per license.
+  ///
+  /// [licenseKey] - The license key to clear cart items for
+  ///
+  /// Returns true if deletion was successful
+  ///
+  /// Note: Does not throw error if cart is empty (0 items deleted)
+  ///
+  /// Example:
+  /// ```dart
+  /// // Clear cart for a specific license
+  /// await cartService.clearCartByLicenseKey('ABC123');
+  /// ```
+  ///
+  /// Throws:
+  /// - [KgitonAuthenticationException] if not authenticated
+  /// - [KgitonApiException] for other errors
+  Future<bool> clearCartByLicenseKey(String licenseKey) async {
+    final endpoint = KgitonApiEndpoints.deleteCartByLicenseKey(licenseKey);
+
+    final response = await _client.delete(endpoint, requiresAuth: true);
+
+    if (!response.success) {
+      throw KgitonApiException(message: 'Failed to clear cart by license key: ${response.message}');
+    }
+
+    return true;
+  }
+
+  /// @deprecated Use [clearCartByLicenseKey] instead
+  @Deprecated('Use clearCartByLicenseKey instead.')
   Future<bool> deleteAllByLicenseKey(String licenseKey) async {
-    throw KgitonApiException(
-      message:
-          'deleteAllByLicenseKey is deprecated. Use clearCart(cartId) instead. '
-          'Cart is now session-based (cart_id) not license-based.',
-    );
+    return clearCartByLicenseKey(licenseKey);
   }
 }

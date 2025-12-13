@@ -2,6 +2,7 @@
 class Item {
   final String id;
   final String ownerId;
+  final String licenseKey;
   final String name;
   final String unit;
   final double price;
@@ -13,6 +14,7 @@ class Item {
   Item({
     required this.id,
     required this.ownerId,
+    required this.licenseKey,
     required this.name,
     required this.unit,
     required this.price,
@@ -26,6 +28,7 @@ class Item {
     return Item(
       id: (json['id'] as String?) ?? '',
       ownerId: (json['owner_id'] as String?) ?? '',
+      licenseKey: (json['license_key'] as String?) ?? '',
       name: (json['name'] as String?) ?? '',
       unit: (json['unit'] as String?) ?? '',
       price: ((json['price'] as num?) ?? 0).toDouble(),
@@ -40,6 +43,7 @@ class Item {
     return {
       'id': id,
       'owner_id': ownerId,
+      'license_key': licenseKey,
       'name': name,
       'unit': unit,
       'price': price,
@@ -98,16 +102,18 @@ class DeleteItemsResponse {
 
 /// Create item request
 class CreateItemRequest {
+  final String licenseKey;
   final String name;
   final String unit;
   final double price;
   final double? pricePerPcs;
   final String? description;
 
-  CreateItemRequest({required this.name, required this.unit, required this.price, this.pricePerPcs, this.description});
+  CreateItemRequest({required this.licenseKey, required this.name, required this.unit, required this.price, this.pricePerPcs, this.description});
 
   Map<String, dynamic> toJson() {
     return {
+      'license_key': licenseKey,
       'name': name,
       'unit': unit,
       'price': price,

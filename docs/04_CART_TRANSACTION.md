@@ -488,6 +488,85 @@ Future<void> clearCart(String cartId) async {
 
 ---
 
+## Multi-Branch Cart Operations
+
+> **NEW in API v1.0.0**: Support for license-based cart operations for multi-branch owners.
+
+### Get Cart Items by License Key
+
+For multi-branch owners, you can retrieve cart items for a specific license:
+
+```dart
+Future<List<CartItem>> getCartByLicense(String licenseKey) async {
+  final api = KgitonApiService(
+    baseUrl: 'https://api.example.com/api',
+  );
+  await api.loadConfiguration();
+  
+  try {
+    // Get all cart items for Branch A
+    final branchACart = await api.cart.getCartItemsByLicenseKey('LICENSE-KEY-A');
+    
+    print('🛒 Branch A Cart has ${branchACart.length} items');
+    for (var item in branchACart) {
+      print('   ${item.item?.name}: ${item.quantity} kg - Rp ${item.totalPrice}');
+    }
+    
+    return branchACart;
+  } catch (e) {
+    print('Error: $e');
+  }
+  
+  return [];
+}
+```
+
+### Clear Cart by License Key
+
+Clear all cart items for a specific license:
+
+```dart
+Future<void> clearCartByLicense(String licenseKey) async {
+  final api = KgitonApiService(
+    baseUrl: 'https://api.example.com/api',
+  );
+  await api.loadConfiguration();
+  
+  try {
+    final success = await api.cart.clearCartByLicenseKey(licenseKey);
+    
+    if (success) {
+      print('✅ Cart cleared for license: $licenseKey');
+    }
+  } catch (e) {
+    print('Error: $e');
+  }
+}
+```
+
+### Using Cart Helper
+
+For simplified usage, use the `KgitonCartHelper`:
+
+```dart
+final cartHelper = KgitonCartHelper(api);
+
+// Get cart by license
+final result = await cartHelper.getItemsByLicenseKey('LICENSE-KEY-A');
+if (result['success']) {
+  List<CartItem> items = result['data'];
+  print('Found ${items.length} items');
+}
+
+// Clear cart by license
+final clearResult = await cartHelper.clearCartByLicenseKey('LICENSE-KEY-A');
+if (clearResult['success']) {
+  print('Cart cleared successfully');
+}
+```
+
+---
+
 ## Checkout Process
 
 ### Payment Methods Available

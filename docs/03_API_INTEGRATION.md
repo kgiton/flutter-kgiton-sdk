@@ -355,13 +355,18 @@ print('Entity: ${license.entityName}');
 
 ## Item Management
 
+> **⚠️ IMPORTANT**: As of API v1.0.0 (2025-12-13), all items MUST be linked to a `license_key` for multi-branch tracking.
+
 ### 1. Create Item
 
 **Endpoint**: `POST /items`
 
+**⚠️ Breaking Change**: Items now REQUIRE `license_key` parameter.
+
 **Request**:
 ```dart
 final item = await api.owner.createItem(
+  licenseKey: 'YOUR-LICENSE-KEY',  // ⚠️ REQUIRED
   name: 'Organic Apple',
   unit: 'kg',
   price: 18500,
@@ -371,17 +376,19 @@ final item = await api.owner.createItem(
 
 print('Created item ID: ${item.id}');
 print('Name: ${item.name}');
-print('Price per kg: Rp ${item.pricePerKg}');
+print('License: ${item.licenseKey}');
+print('Price per kg: Rp ${item.price}');
 ```
 
 **Request Body**:
 ```json
 {
+  "license_key": "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX",
   "name": "Organic Apple",
   "price": 18500,
+  "price_per_pcs": 2000,
   "unit": "kg",
-  "category": "Fruits",
-  "sku": "FRUIT-001"
+  "description": "Fresh organic apples"
 }
 ```
 
@@ -391,29 +398,38 @@ print('Price per kg: Rp ${item.pricePerKg}');
   "success": true,
   "message": "Item created successfully",
   "data": {
-    "id": 1,
+    "id": "uuid-here",
+    "owner_id": "owner-uuid",
+    "license_key": "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX",
     "name": "Organic Apple",
     "price": 18500,
+    "price_per_pcs": 2000,
     "unit": "kg",
-    "category": "Fruits",
-    "sku": "FRUIT-001",
-    "createdAt": "2025-12-12T10:00:00Z"
+    "description": "Fresh organic apples",
+    "created_at": "2025-12-13T10:00:00Z",
+    "updated_at": "2025-12-13T10:00:00Z"
   }
 }
 ```
 
 ### 2. List Items
 
-**Endpoint**: `GET /items?page=1&limit=20`
+**Endpoint**: `GET /items?license_key=XXXXX`
+
+**Filter by License Key** (for multi-branch support):
 
 **Request**:
 ```dart
-final itemListData = await api.owner.listItems(
-  'YOUR-LICENSE-KEY',
-);
+// List all items (across all licenses)
+final allItems = await api.owner.listAllItems();
 
-for (var item in itemListData.items) {
-  print('${item.name} - Rp ${item.pricePerKg}/kg');
+// List items for a specific license (multi-branch)
+final branchAItems = await api.owner.listItems('LICENSE-KEY-A');
+final branchBItems = await api.owner.listItems('LICENSE-KEY-B');
+
+for (var item in branchAItems.items) {
+  print('${item.name} - Rp ${item.price}/kg');
+  print('  License: ${item.licenseKey}');
   if (item.pricePerPcs != null) {
     print('  or Rp ${item.pricePerPcs}/pcs');
   }
@@ -424,29 +440,26 @@ for (var item in itemListData.items) {
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Organic Apple",
-      "price": 18500,
-      "unit": "kg",
-      "category": "Fruits",
-      "sku": "FRUIT-001"
-    },
-    {
-      "id": 2,
-      "name": "Fresh Banana",
-      "price": 12000,
-      "unit": "kg",
-      "category": "Fruits",
-      "sku": "FRUIT-002"
-    }
-  ],
-  "pagination": {
-    "total": 50,
-    "page": 1,
-    "limit": 20,
-    "totalPages": 3
+  "data": {
+    "items": [
+      {
+        "id": "uuid-1",
+        "owner_id": "owner-uuid",
+        "license_key": "LICENSE-KEY-A",
+        "name": "Organic Apple",
+        "price": 18500,
+        "unit": "kg"
+      },
+      {
+        "id": "uuid-2",
+        "owner_id": "owner-uuid",
+        "license_key": "LICENSE-KEY-A",
+        "name": "Fresh Banana",
+        "price": 12000,
+        "unit": "kg"
+      }
+    ],
+    "count": 2
   }
 }
 ```
