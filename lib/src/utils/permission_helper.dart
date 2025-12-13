@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:permission_handler/permission_handler.dart' as permission_handler;
 import 'package:permission_handler/permission_handler.dart';
 
 /// Helper class untuk menangani BLE permissions di berbagai versi Android dan iOS
@@ -212,8 +213,9 @@ class PermissionHelper {
     return 'Izin diperlukan untuk menggunakan fitur ini.';
   }
 
-  /// Open app settings
-  static Future<void> openAppSettings() async {
-    await openAppSettings();
+  /// Open app settings untuk mengubah permissions secara manual
+  static Future<bool> openAppSettings() async {
+    // Gunakan fungsi openAppSettings dari permission_handler package
+    return await permission_handler.openAppSettings();
   }
 }
