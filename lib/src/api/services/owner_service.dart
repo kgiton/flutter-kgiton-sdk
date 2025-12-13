@@ -274,4 +274,74 @@ class KgitonOwnerService {
 
     return true;
   }
+
+  /// Delete all items permanently
+  ///
+  /// This performs a **permanent delete** by removing ALL items from the database.
+  /// This action is **irreversible** and deleted items cannot be recovered.
+  ///
+  /// Returns [DeleteItemsResponse] containing the count of deleted items
+  ///
+  /// **Warning:** This action is irreversible! All items will be completely
+  /// removed from the database and cannot be restored.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Show confirmation dialog first!
+  /// final confirm = await showDialog<bool>(
+  ///   context: context,
+  ///   builder: (context) => AlertDialog(
+  ///     title: Text('Delete All Items?'),
+  ///     content: Text(
+  ///       '⚠️ WARNING: This will permanently delete ALL items!\n\n'
+  ///       'This action CANNOT be undone!\n\n'
+  ///       'Are you absolutely sure?',
+  ///     ),
+  ///     actions: [
+  ///       TextButton(
+  ///         onPressed: () => Navigator.pop(context, false),
+  ///         child: Text('Cancel'),
+  ///       ),
+  ///       TextButton(
+  ///         onPressed: () => Navigator.pop(context, true),
+  ///         child: Text('Delete All'),
+  ///         style: TextButton.styleFrom(foregroundColor: Colors.red),
+  ///       ),
+  ///     ],
+  ///   ),
+  /// );
+  ///
+  /// if (confirm == true) {
+  ///   try {
+  ///     final result = await ownerService.deleteAllItems();
+  ///     showSuccess('${result.count} item(s) deleted successfully');
+  ///
+  ///     // Refresh item list
+  ///     final updatedItems = await ownerService.listAllItems();
+  ///     setState(() {
+  ///       items = updatedItems.items;
+  ///     });
+  ///   } catch (e) {
+  ///     showError('Failed to delete all items: $e');
+  ///   }
+  /// }
+  /// ```
+  ///
+  /// Throws:
+  /// - [KgitonAuthenticationException] if not authenticated
+  /// - [KgitonAuthorizationException] if not owner role
+  /// - [KgitonApiException] for other errors
+  Future<DeleteItemsResponse> deleteAllItems() async {
+    final response = await _client.delete<DeleteItemsResponse>(
+      KgitonApiEndpoints.deleteAllItemsPermanent,
+      requiresAuth: true,
+      fromJsonT: (json) => DeleteItemsResponse.fromJson(json),
+    );
+
+    if (!response.success || response.data == null) {
+      throw Exception('Failed to delete all items: ${response.message}');
+    }
+
+    return response.data!;
+  }
 }

@@ -521,16 +521,17 @@ print('New name: ${updatedItem.name}');
 }
 ```
 
-### 5. Delete Item (Soft Delete)
+### 5. Delete Item (Permanent Delete)
 
-**Endpoint**: `DELETE /items/:id`
+**Endpoint**: `DELETE /items/:id/permanent`
 
 **Request**:
 ```dart
+// ⚠️ WARNING: This permanently deletes the item from database
 final success = await api.owner.deleteItem('item-uuid-here');
 
 if (success) {
-  print('Item deleted successfully');
+  print('Item permanently deleted');
 }
 ```
 
@@ -538,9 +539,151 @@ if (success) {
 ```json
 {
   "success": true,
-  "message": "Item deleted successfully"
+  "message": "Item permanently deleted"
 }
 ```
+
+**Important Notes**:
+- This performs a **permanent delete** (hard delete)
+- Deleted items **cannot be recovered**
+- Always show confirmation dialog to users before calling this method
+
+### 6. Delete All Items (Permanent Delete)
+
+**Endpoint**: `DELETE /items/permanent`
+
+**Request**:
+```dart
+// ⚠️ WARNING: This permanently deletes ALL items from database
+try {
+  final result = await api.owner.deleteAllItems();
+  print('Successfully deleted ${result.count} items');
+} catch (e) {
+  print('Error: $e');
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "5 item(s) permanently deleted",
+  "data": {
+    "count": 5
+  }
+}
+```
+
+**Response (No Items)**:
+```json
+{
+  "success": true,
+  "message": "0 item(s) permanently deleted",
+  "data": {
+    "count": 0
+  }
+}
+```
+
+**Important Notes**:
+- This performs a **permanent delete** (hard delete) on **ALL items**
+- Deleted items **cannot be recovered**
+- Only deletes items belonging to the authenticated owner
+- **MUST** show double confirmation dialog to users
+- Recommended to implement backup/export before deletion
+
+**Example with Confirmation Dialog**:
+```dart
+Future<void> deleteAllItemsWithConfirmation(BuildContext context) async {
+  // Get current items count
+  final items = await api.owner.listAllItems();
+  final count = items.items.length;
+  
+  if (count == 0) {
+    showSnackbar('No items to delete');
+    return;
+  }
+  
+  // Show confirmation dialog
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Row(
+        children: [
+          Icon(Icons.warning, color: Colors.red),
+          SizedBox(width: 8),
+          Text('Delete All Items?'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '⚠️ WARNING',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+              fontSize: 16,
+            ),
+          ),
+          SizedBox(height: 12),
+          Text('This will permanently delete ALL $count item(s)!'),
+          SizedBox(height: 8),
+          Text(
+            'This action CANNOT be undone!',
+            style: TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 12),
+          Text('Are you absolutely sure?'),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          child: Text('Delete All'),
+        ),
+      ],
+    ),
+  );
+  
+  if (confirmed != true) return;
+  
+  // Perform deletion
+  try {
+    final result = await api.owner.deleteAllItems();
+    showSnackbar('${result.count} item(s) deleted successfully');
+    
+    // Refresh items list
+    // ... refresh your UI here
+  } catch (e) {
+    showSnackbar('Failed to delete items: $e');
+  }
+}
+```
+
+**Error Codes**:
+- `401`: Unauthorized - Token invalid or expired
+- `403`: Forbidden - User is not an owner
+- `400`: Bad Request - Failed to delete items
+
+**Use Cases**:
+1. **Reset Inventory** - Owner wants to clear all items and start fresh
+2. **Data Cleanup** - Remove all old/test data before production
+3. **Account Migration** - Clear data before switching to new system
+
+**See Also**: [DELETE_ALL_ITEMS.md](../docs/DELETE_ALL_ITEMS.md) for complete implementation guide
 
 ---
 

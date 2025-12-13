@@ -89,6 +89,10 @@ class KgitonApiEndpoints {
   /// DELETE /v1/items/:id/permanent
   static String deletePermanentItem(String id) => '/items/$id/permanent';
 
+  /// Permanently delete all items (hard delete - remove all from database)
+  /// DELETE /v1/items/permanent
+  static const String deleteAllItemsPermanent = '/items/permanent';
+
   // ============================================================================
   // TRANSACTION ENDPOINTS (Owner)
   // ============================================================================

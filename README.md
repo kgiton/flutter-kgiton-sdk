@@ -244,8 +244,13 @@ await apiService.owner.updateItem(
   price: 18000,
 );
 
-// Delete item
+// Delete single item (permanent)
 await apiService.owner.deleteItem(newItem.id);
+
+// Delete all items (permanent) - requires confirmation dialog
+final result = await apiService.owner.deleteAllItems();
+print('Deleted ${result.count} items');
+// See docs/DELETE_ALL_ITEMS.md for complete implementation guide
 
 // 4. Cart & Checkout Workflow
 

@@ -82,6 +82,24 @@ class ItemListData {
   }
 }
 
+/// Delete items response
+class DeleteItemsResponse {
+  final int count;
+
+  DeleteItemsResponse({required this.count});
+
+  factory DeleteItemsResponse.fromJson(dynamic json) {
+    if (json is Map<String, dynamic>) {
+      return DeleteItemsResponse(count: json['count'] as int);
+    }
+    throw FormatException('Invalid DeleteItemsResponse format');
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'count': count};
+  }
+}
+
 /// Create item request
 class CreateItemRequest {
   final String name;

@@ -200,6 +200,7 @@ await api.owner.createItem(
 - User management
 - License operations
 - Item/Product CRUD operations
+- Delete all items (permanent)
 - Request/Response specifications
 - Error handling and status codes
 - Best practices
@@ -214,6 +215,16 @@ await api.owner.createItem(
 - Transaction history
 - Receipt generation
 - Multi-device cart support
+
+### 🗑️ [Delete All Items Guide](DELETE_ALL_ITEMS.md)
+**Bulk delete operations guide**
+- Delete all items permanently
+- API method reference
+- UI/UX best practices
+- Confirmation dialog implementation
+- Error handling
+- Use cases and examples
+- Complete Flutter integration
 
 ### ⚠️ [5. Troubleshooting](05_TROUBLESHOOTING.md)
 **Common issues and solutions**
