@@ -4,6 +4,83 @@ All notable changes to KGiTON Flutter SDK will be documented in this file.
 
 ---
 
+## [Unreleased] - 2025-12-15
+
+### ✨ Added - Password Management Features
+
+#### Authentication Service (`lib/src/api/services/auth_service.dart`)
+- `forgotPassword()` - Request password reset via email
+- `resetPassword()` - Reset password using token from email
+- `changePassword()` - Change password for authenticated users
+
+#### API Models (`lib/src/api/models/auth_models.dart`)
+- `ForgotPasswordRequest` - Request model for forgot password
+- `ResetPasswordRequest` - Request model for password reset with token
+- `ChangePasswordRequest` - Request model for password change
+
+#### API Constants (`lib/src/api/api_constants.dart`)
+- `/auth/forgot-password` endpoint
+- `/auth/reset-password` endpoint
+- `/auth/change-password` endpoint
+
+#### Example App - Password Management UI
+- **Forgot Password Page** - Request password reset link
+  - Email validation
+  - Success confirmation screen
+  - Link to login page
+- **Reset Password Page** - Reset password with token
+  - Token validation from URL query parameters
+  - Password confirmation
+  - Success confirmation screen
+- **Change Password Page** - Change password for authenticated users
+  - Current password validation
+  - New password confirmation
+  - Password strength validation
+  - Success confirmation screen
+
+#### Example App - Integration
+- Added "Forgot Password?" link on login page
+- Added "Change Password" menu item in profile page
+- Created usecases: `ForgotPasswordUseCase`, `ResetPasswordUseCase`, `ChangePasswordUseCase`
+- Updated `AuthBloc` with new events and states:
+  - `ForgotPasswordRequested` event
+  - `ResetPasswordRequested` event
+  - `ChangePasswordRequested` event
+  - `PasswordResetEmailSent` state
+  - `PasswordResetSuccess` state
+  - `PasswordChangeSuccess` state
+- Updated dependency injection container
+- Updated app routing with new routes
+
+#### Documentation
+- Updated `docs/03_API_INTEGRATION.md` with password management endpoints
+- Added comprehensive API examples for all password operations
+
+### 📝 Notes
+
+**Password Reset Flow:**
+1. User clicks "Forgot Password?" on login page
+2. Enters email address
+3. Receives reset link via email (expires in 1 hour)
+4. Clicks link to open reset password page with token
+5. Enters new password and confirms
+6. Redirected to login page on success
+
+**Change Password Flow:**
+1. Authenticated user navigates to Profile > Change Password
+2. Enters current password
+3. Enters new password and confirms
+4. Password updated successfully
+
+**Security Features:**
+- Email enumeration prevention (always returns success)
+- Token expiration (1 hour for reset tokens)
+- Password validation (minimum 6 characters)
+- Old password verification for password change
+- All operations logged in backend
+
+---
+
 ## [Unreleased] - 2025-12-13
 
 ### 🔥 BREAKING CHANGES

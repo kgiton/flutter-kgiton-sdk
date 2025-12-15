@@ -137,4 +137,63 @@ class KgitonAuthService {
   String? getRefreshToken() {
     return _client.refreshToken;
   }
+
+  /// Request password reset via email
+  ///
+  /// [email] - User's email address
+  ///
+  /// Sends a password reset link to the provided email if it exists.
+  /// Always returns success to prevent email enumeration attacks.
+  ///
+  /// Throws:
+  /// - [KgitonValidationException] if email format is invalid
+  /// - [KgitonApiException] for other errors
+  Future<void> forgotPassword({required String email}) async {
+    final request = ForgotPasswordRequest(email: email);
+
+    final response = await _client.post<void>(KgitonApiEndpoints.forgotPassword, body: request.toJson(), requiresAuth: false);
+
+    if (!response.success) {
+      throw Exception('Failed to request password reset: ${response.message}');
+    }
+  }
+
+  /// Reset password using token from email
+  ///
+  /// [token] - Reset token received via email
+  /// [newPassword] - New password (minimum 6 characters)
+  ///
+  /// Throws:
+  /// - [KgitonValidationException] if password is too short or token is invalid
+  /// - [KgitonApiException] for other errors
+  Future<void> resetPassword({required String token, required String newPassword}) async {
+    final request = ResetPasswordRequest(token: token, newPassword: newPassword);
+
+    final response = await _client.post<void>(KgitonApiEndpoints.resetPassword, body: request.toJson(), requiresAuth: false);
+
+    if (!response.success) {
+      throw Exception('Failed to reset password: ${response.message}');
+    }
+  }
+
+  /// Change password for authenticated user
+  ///
+  /// [oldPassword] - Current password
+  /// [newPassword] - New password (minimum 6 characters)
+  ///
+  /// Requires user to be authenticated.
+  ///
+  /// Throws:
+  /// - [KgitonAuthenticationException] if not authenticated or old password is incorrect
+  /// - [KgitonValidationException] if new password is too short
+  /// - [KgitonApiException] for other errors
+  Future<void> changePassword({required String oldPassword, required String newPassword}) async {
+    final request = ChangePasswordRequest(oldPassword: oldPassword, newPassword: newPassword);
+
+    final response = await _client.post<void>(KgitonApiEndpoints.changePassword, body: request.toJson(), requiresAuth: true);
+
+    if (!response.success) {
+      throw Exception('Failed to change password: ${response.message}');
+    }
+  }
 }

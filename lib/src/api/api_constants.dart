@@ -49,6 +49,18 @@ class KgitonApiEndpoints {
   /// POST /v1/auth/logout
   static const String logout = '/auth/logout';
 
+  /// Forgot password - send reset link via email
+  /// POST /v1/auth/forgot-password
+  static const String forgotPassword = '/auth/forgot-password';
+
+  /// Reset password with token
+  /// POST /v1/auth/reset-password
+  static const String resetPassword = '/auth/reset-password';
+
+  /// Change password (authenticated users)
+  /// POST /v1/auth/change-password
+  static const String changePassword = '/auth/change-password';
+
   // ============================================================================
   // OWNER OPERATIONS ENDPOINTS
   // ============================================================================

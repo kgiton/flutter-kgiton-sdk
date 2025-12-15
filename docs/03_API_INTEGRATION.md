@@ -255,6 +255,117 @@ await api.auth.logout();
 }
 ```
 
+### 5. Forgot Password
+
+**Endpoint**: `POST /auth/forgot-password`
+
+**Description**: Sends a password reset link to the user's email address.
+
+**Request**:
+```dart
+await api.auth.forgotPassword(
+  email: 'john@example.com',
+);
+
+// Always returns success to prevent email enumeration
+print('Password reset link sent to email');
+```
+
+**Request Body**:
+```json
+{
+  "email": "john@example.com"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "If an account with that email exists, a password reset link has been sent"
+}
+```
+
+**Notes**:
+- The response is always success to prevent email enumeration attacks
+- The reset link expires in 1 hour
+- Users should check their inbox and spam folder
+
+**Error Codes**:
+- `400`: Invalid email format
+
+### 6. Reset Password
+
+**Endpoint**: `POST /auth/reset-password`
+
+**Description**: Resets password using the token received via email.
+
+**Request**:
+```dart
+await api.auth.resetPassword(
+  token: 'reset-token-from-email',
+  newPassword: 'NewSecurePass123!',
+);
+
+print('Password reset successful');
+```
+
+**Request Body**:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "new_password": "NewSecurePass123!"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Password reset successfully"
+}
+```
+
+**Error Codes**:
+- `400`: Invalid or expired token
+- `422`: Password too short (minimum 6 characters)
+
+### 7. Change Password
+
+**Endpoint**: `POST /auth/change-password`
+
+**Description**: Changes password for authenticated users.
+
+**Request**:
+```dart
+await api.auth.changePassword(
+  oldPassword: 'OldSecurePass123!',
+  newPassword: 'NewSecurePass456!',
+);
+
+print('Password changed successfully');
+```
+
+**Request Body**:
+```json
+{
+  "old_password": "OldSecurePass123!",
+  "new_password": "NewSecurePass456!"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Password changed successfully"
+}
+```
+
+**Error Codes**:
+- `401`: Unauthorized (not authenticated or wrong old password)
+- `422`: New password too short (minimum 6 characters)
+
 ### Token Management
 
 ```dart
