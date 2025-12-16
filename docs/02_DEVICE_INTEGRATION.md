@@ -246,6 +246,8 @@ class _ScanPageState extends State<ScanPage> {
 
 ## 3. Connect & Authenticate
 
+### Basic Connection (Without Ownership Verification)
+
 ```dart
 final response = await scale.connectWithLicenseKey(
   deviceId: 'KGITON_xxx',
@@ -258,6 +260,59 @@ if (response.success) {
   print('Failed: ${response.message}');
 }
 ```
+
+### Secure Connection (With Ownership Verification) ⭐ RECOMMENDED
+
+Untuk memastikan hanya pemilik sah yang bisa connect ke timbangan, aktifkan verifikasi kepemilikan dengan menyediakan `KgitonApiService` saat inisialisasi:
+
+```dart
+// 1. Inisialisasi API Service (biasanya setelah login)
+final apiService = KgitonApiService(
+  baseUrl: 'https://api.example.com',
+  accessToken: 'user-access-token',
+);
+
+// 2. Buat scale service DENGAN API service
+final scale = KGiTONScaleService(apiService: apiService);
+
+// ATAU set API service setelah user login
+final scale = KGiTONScaleService();
+// ... setelah user login ...
+scale.setApiService(apiService);
+
+// 3. Connect - akan otomatis memverifikasi kepemilikan
+final response = await scale.connectWithLicenseKey(
+  deviceId: 'KGITON_xxx',
+  licenseKey: 'your-license-key',
+);
+
+if (response.success) {
+  print('Connected! (Ownership verified)');
+} else {
+  print('Failed: ${response.message}');
+  // Error bisa jadi:
+  // - "Anda bukan pemilik sah dari license key ini"
+  // - "License tidak valid"
+  // - dll.
+}
+```
+
+**Cara Kerja:**
+1. Saat `connectWithLicenseKey` dipanggil, SDK akan mengecek apakah user adalah pemilik license key
+2. SDK memanggil API `/owner/licenses` untuk mendapatkan daftar license milik user
+3. Jika license key ada dalam daftar, koneksi diizinkan
+4. Jika tidak, koneksi ditolak dengan error
+
+**Keuntungan:**
+- ✅ Hanya pemilik sah yang bisa connect
+- ✅ Mencegah akses tidak sah meskipun license key diketahui orang lain
+- ✅ Audit trail yang lebih baik
+- ✅ Keamanan berlapis (verifikasi API + verifikasi device)
+
+**Catatan:**
+- Jika API service TIDAK disediakan, verifikasi kepemilikan akan di-skip (backward compatible)
+- Verifikasi kepemilikan memerlukan koneksi internet
+- User harus sudah login sebelum connect
 
 ### Monitor Connection State
 

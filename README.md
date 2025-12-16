@@ -180,12 +180,33 @@ await scaleService.scanForDevices(
 );
 
 // 7. Connect to a device with license authentication
+// RECOMMENDED: Pass apiService for ownership verification
 try {
-  await scaleService.connectWithLicenseKey(
+  // Option A: Initialize with API service (SECURE - verifies ownership)
+  final apiService = KgitonApiService(
+    baseUrl: 'https://api.example.com',
+    accessToken: yourAccessToken,
+  );
+  final scaleService = KGiTONScaleService(apiService: apiService);
+  
+  // Connect - only legitimate owner can connect
+  final response = await scaleService.connectWithLicenseKey(
     deviceId: selectedDevice.id,
     licenseKey: 'YOUR-LICENSE-KEY',
   );
-  print('Successfully connected!');
+  
+  if (response.success) {
+    print('Successfully connected! (Ownership verified)');
+  } else {
+    print('Failed: ${response.message}'); // e.g. "Anda bukan pemilik sah dari license key ini"
+  }
+  
+  // Option B: Without API service (LEGACY - no ownership check)
+  // final scaleService = KGiTONScaleService();
+  // await scaleService.connectWithLicenseKey(
+  //   deviceId: selectedDevice.id,
+  //   licenseKey: 'YOUR-LICENSE-KEY',
+  // );
 } catch (e) {
   print('Connection failed: $e');
 }

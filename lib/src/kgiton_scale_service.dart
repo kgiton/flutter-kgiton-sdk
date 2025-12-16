@@ -10,6 +10,8 @@ import 'models/weight_data.dart';
 import 'models/control_response.dart';
 import 'exceptions/kgiton_exceptions.dart';
 import 'utils/permission_helper.dart';
+import 'api/kgiton_api_service.dart';
+import 'helpers/kgiton_license_helper.dart';
 
 /// KGiTON Scale Service
 ///
@@ -49,8 +51,36 @@ class KGiTONScaleService {
   // Storage key untuk license key mapping
   static const String _storageKey = 'kgiton_device_licenses';
 
+  // API Service untuk verifikasi kepemilikan (optional)
+  KgitonApiService? _apiService;
+  KgitonLicenseHelper? _licenseHelper;
+
   /// Constructor
-  KGiTONScaleService();
+  ///
+  /// [apiService] - Optional API service untuk verifikasi kepemilikan license.
+  /// Jika disediakan, connectWithLicenseKey akan memverifikasi bahwa user
+  /// adalah pemilik sah dari license key sebelum mengizinkan koneksi.
+  KGiTONScaleService({KgitonApiService? apiService}) {
+    _apiService = apiService;
+    if (_apiService != null) {
+      _licenseHelper = KgitonLicenseHelper(_apiService!);
+    }
+  }
+
+  /// Set atau update API service untuk verifikasi kepemilikan
+  ///
+  /// Gunakan method ini untuk mengaktifkan verifikasi kepemilikan license
+  /// setelah service dibuat atau setelah user login.
+  void setApiService(KgitonApiService apiService) {
+    _apiService = apiService;
+    _licenseHelper = KgitonLicenseHelper(apiService);
+  }
+
+  /// Clear API service (misalnya saat logout)
+  void clearApiService() {
+    _apiService = null;
+    _licenseHelper = null;
+  }
 
   // ============================================
   // GETTERS
@@ -262,6 +292,16 @@ class KGiTONScaleService {
     // Validasi device ada dalam daftar
     if (!_availableDevices.any((d) => d.id == deviceId)) {
       throw DeviceNotFoundException('Device $deviceId tidak ditemukan');
+    }
+
+    // VERIFIKASI KEPEMILIKAN LICENSE (jika API service tersedia)
+    if (_licenseHelper != null) {
+      final ownershipResult = await _licenseHelper!.verifyLicenseOwnership(licenseKey);
+
+      if (!ownershipResult['success']) {
+        // Kepemilikan tidak valid - tolak koneksi
+        return ControlResponse.error(ownershipResult['message'] ?? 'Anda bukan pemilik sah dari license key ini');
+      }
     }
 
     try {

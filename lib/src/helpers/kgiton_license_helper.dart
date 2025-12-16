@@ -136,6 +136,36 @@ class KgitonLicenseHelper {
     }
   }
 
+  /// Verify if the current user is the owner of a specific license key
+  ///
+  /// This method checks if the license key exists in the current user's license list,
+  /// ensuring only the legitimate owner can connect to their device.
+  ///
+  /// Returns map with:
+  /// - success: bool - true if user owns the license
+  /// - message: String - error or success message
+  /// - isOwner: bool - true if user is the owner (only present if success is true)
+  Future<Map<String, dynamic>> verifyLicenseOwnership(String licenseKey) async {
+    try {
+      final result = await getMyLicenses();
+
+      if (!result['success']) {
+        return {'success': false, 'message': 'Gagal memverifikasi kepemilikan license: ${result['message']}', 'isOwner': false};
+      }
+
+      final licenses = result['data'] as List<Map<String, dynamic>>;
+      final isOwner = licenses.any((l) => l['license_key'] == licenseKey);
+
+      if (!isOwner) {
+        return {'success': false, 'message': 'Anda bukan pemilik sah dari license key ini', 'isOwner': false};
+      }
+
+      return {'success': true, 'message': 'Verifikasi kepemilikan berhasil', 'isOwner': true};
+    } catch (e) {
+      return {'success': false, 'message': 'Error saat verifikasi kepemilikan: ${e.toString()}', 'isOwner': false};
+    }
+  }
+
   // ============================================
   // ASSIGN LICENSE
   // ============================================

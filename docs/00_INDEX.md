@@ -142,12 +142,21 @@ final api = KgitonApiService(
 // Load saved tokens from storage
 await api.loadConfiguration();
 
-// Device: Scan & Connect
+// Device: Scan & Connect (with ownership verification)
 await scale.scanForDevices();
-final response = await scale.connectWithLicenseKey(
+
+// SECURE: Initialize scale service with API for ownership verification
+final secureScale = KGiTONScaleService(apiService: api);
+final response = await secureScale.connectWithLicenseKey(
   deviceId: 'KGITON_ABC123',
-  licenseKey: 'YOUR-LICENSE-KEY',
+  licenseKey: 'YOUR-LICENSE-KEY', // Only works if you own this license
 );
+
+if (response.success) {
+  print('Connected and ownership verified!');
+} else {
+  print('Failed: ${response.message}'); // e.g. "Anda bukan pemilik sah dari license key ini"
+}
 
 // Device: Stream weight data
 scale.weightStream.listen((weight) {
@@ -209,6 +218,31 @@ await api.owner.createItem(
 **Shopping cart and payment workflows**
 - Session-based cart system
 - Cart operations (add, update, remove)
+- Multi-branch cart isolation
+- Transaction creation and management
+- QR code generation for payment
+- Status tracking and monitoring
+- Complete workflow examples
+
+### ⚠️ [5. Troubleshooting](05_TROUBLESHOOTING.md)
+**Problem-solving guide**
+- Common issues and solutions
+- BLE connection problems
+- Permission errors
+- API integration issues
+- Platform-specific fixes
+- Debug logging
+- Performance optimization
+
+### 🔐 [6. Ownership Verification](06_OWNERSHIP_VERIFICATION.md) ⭐ NEW
+**Security feature for device access control**
+- Preventing unauthorized device access
+- License ownership verification
+- Implementation guide
+- Error handling strategies
+- Migration from legacy mode
+- Best practices
+- Testing examples
 - Cart ID generation
 - Checkout process
 - Payment methods (QRIS, Cash, Bank Transfer)

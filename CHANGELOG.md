@@ -4,6 +4,70 @@ All notable changes to KGiTON Flutter SDK will be documented in this file.
 
 ---
 
+## [Unreleased] - 2025-12-16
+
+### 🔐 Added - Ownership Verification (Security Enhancement)
+
+#### Scale Service (`lib/src/kgiton_scale_service.dart`)
+- **Constructor with API Service** - Initialize with optional `KgitonApiService` for ownership verification
+  ```dart
+  KGiTONScaleService({KgitonApiService? apiService})
+  ```
+- **setApiService()** - Enable ownership verification after service creation
+- **clearApiService()** - Disable ownership verification (e.g., on logout)
+- **Enhanced connectWithLicenseKey()** - Automatically verifies license ownership before allowing connection
+  - Checks if user is the legitimate owner via API call
+  - Returns error if ownership verification fails
+  - Backward compatible (verification skipped if no API service)
+
+#### License Helper (`lib/src/helpers/kgiton_license_helper.dart`)
+- **verifyLicenseOwnership()** - New method to verify if current user owns a specific license key
+  - Returns map with success, message, and isOwner status
+  - Fetches user's licenses from API
+  - Validates license ownership before device connection
+
+#### Documentation
+- **[NEW] 06_OWNERSHIP_VERIFICATION.md** - Complete guide on ownership verification feature
+  - Problem statement and solution
+  - Implementation guide
+  - Security benefits
+  - Error handling strategies
+  - Migration guide from legacy mode
+  - Testing examples
+  - FAQ section
+- **Updated 02_DEVICE_INTEGRATION.md** - Added secure connection section with ownership verification
+- **Updated README.md** - Updated quick start examples to showcase ownership verification
+- **Updated 00_INDEX.md** - Added link to new ownership verification documentation
+
+### 🔒 Security Improvements
+- **Prevents Unauthorized Access** - Only legitimate license owners can connect to devices
+- **Multi-layer Security**:
+  1. API-level ownership verification
+  2. Device-level license authentication
+  3. BLE connection security
+- **Audit Trail** - All connections are now verifiable with user identity
+- **Multi-tenant Safe** - Different owners cannot access each other's scales
+
+### 🔄 Backward Compatibility
+- Feature is **optional** and fully backward compatible
+- Existing code without API service continues to work (no ownership verification)
+- New code can enable verification by passing API service
+- No breaking changes to existing API
+
+### 📝 Examples
+```dart
+// OLD (without verification) - still works
+final scale = KGiTONScaleService();
+await scale.connectWithLicenseKey(...);
+
+// NEW (with verification) - recommended
+final apiService = KgitonApiService(baseUrl: '...', accessToken: '...');
+final scale = KGiTONScaleService(apiService: apiService);
+await scale.connectWithLicenseKey(...); // Ownership verified!
+```
+
+---
+
 ## [Unreleased] - 2025-12-15
 
 ### ✨ Added - Password Management Features
