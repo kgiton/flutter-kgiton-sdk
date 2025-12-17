@@ -122,6 +122,103 @@ print('Using cart: $cartId');
 
 ## Cart Operations
 
+### Quantity Validation Rules
+
+Starting from SDK, the cart system supports flexible dual pricing with the following validation rules:
+
+#### Valid Quantity Values
+
+- **`quantity` (kg)**: Can be `>= 0` (accepts 0, null, or positive numbers)
+- **`quantityPcs` (pcs)**: Can be `>= 0` (accepts 0, null, or positive numbers)
+- **Constraint**: At least one field must be `> 0` (both cannot be 0 or null)
+
+#### Semantic Meaning
+
+- **`quantity = 0`** → Item **NOT sold per kg**, only per pcs
+- **`quantityPcs = 0`** → Item **NOT sold per pcs**, only per kg
+- **Both `> 0`** → Item sold with **dual pricing**
+
+#### Examples
+
+**1. Per Kg Only (Option 1):**
+```dart
+AddCartRequest(
+  cartId: cartId,
+  licenseKey: licenseKey,
+  itemId: itemId,
+  quantity: 2.5,       // 2.5 kg
+  quantityPcs: null,   // Not used
+)
+```
+
+**2. Per Kg Only (Option 2):**
+```dart
+AddCartRequest(
+  cartId: cartId,
+  licenseKey: licenseKey,
+  itemId: itemId,
+  quantity: 2.5,       // 2.5 kg
+  quantityPcs: 0,      // Not sold per pcs
+)
+```
+
+**3. Per Pcs Only (Option 1):**
+```dart
+AddCartRequest(
+  cartId: cartId,
+  licenseKey: licenseKey,
+  itemId: itemId,
+  quantity: null,      // Not used
+  quantityPcs: 10,     // 10 pieces
+)
+```
+
+**4. Per Pcs Only (Option 2):**
+```dart
+AddCartRequest(
+  cartId: cartId,
+  licenseKey: licenseKey,
+  itemId: itemId,
+  quantity: 0,         // Not sold per kg
+  quantityPcs: 10,     // 10 pieces
+)
+```
+
+**5. Dual Pricing:**
+```dart
+AddCartRequest(
+  cartId: cartId,
+  licenseKey: licenseKey,
+  itemId: itemId,
+  quantity: 1.5,       // 1.5 kg
+  quantityPcs: 8,      // 8 pieces
+)
+```
+
+**❌ Invalid Examples:**
+
+```dart
+// Both zero - REJECTED
+AddCartRequest(
+  quantity: 0,
+  quantityPcs: 0,
+)
+
+// Both null - REJECTED
+AddCartRequest(
+  quantity: null,
+  quantityPcs: null,
+)
+
+// Negative values - REJECTED
+AddCartRequest(
+  quantity: -1.5,
+  quantityPcs: 10,
+)
+```
+
+---
+
 ### 1. Add Item to Cart
 
 **Add weighted item from scale:**

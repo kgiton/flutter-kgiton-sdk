@@ -147,11 +147,16 @@ class AddCartRequest {
     // At least one quantity must be provided
     if (quantity == null && quantityPcs == null) return false;
 
-    // Validate quantity if provided
-    if (quantity != null && quantity! <= 0) return false;
+    // Validate quantity if provided (allow >= 0 for per-pcs items)
+    if (quantity != null && quantity! < 0) return false;
 
-    // Validate quantityPcs if provided
-    if (quantityPcs != null && quantityPcs! <= 0) return false;
+    // Validate quantityPcs if provided (allow >= 0 for per-kg items)
+    if (quantityPcs != null && quantityPcs! < 0) return false;
+
+    // At least one quantity must be > 0
+    final hasValidQuantity = quantity != null && quantity! > 0;
+    final hasValidQuantityPcs = quantityPcs != null && quantityPcs! > 0;
+    if (!hasValidQuantity && !hasValidQuantityPcs) return false;
 
     return true;
   }
@@ -182,14 +187,23 @@ class UpdateCartRequest {
       return false;
     }
 
-    // Validate quantity if provided
-    if (quantity != null && quantity! <= 0) {
+    // Validate quantity if provided (allow >= 0 for per-pcs items)
+    if (quantity != null && quantity! < 0) {
       return false;
     }
 
-    // Validate quantityPcs if provided
-    if (quantityPcs != null && quantityPcs! <= 0) {
+    // Validate quantityPcs if provided (allow >= 0 for per-kg items)
+    if (quantityPcs != null && quantityPcs! < 0) {
       return false;
+    }
+
+    // If updating quantities (not just notes), at least one must be > 0
+    if ((quantity != null || quantityPcs != null) && notes == null) {
+      final hasValidQuantity = quantity != null && quantity! > 0;
+      final hasValidQuantityPcs = quantityPcs != null && quantityPcs! > 0;
+      if (!hasValidQuantity && !hasValidQuantityPcs) {
+        return false;
+      }
     }
 
     return true;

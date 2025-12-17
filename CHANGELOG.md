@@ -4,7 +4,71 @@ All notable changes to KGiTON Flutter SDK will be documented in this file.
 
 ---
 
-## [Unreleased] - 2025-12-16
+## 2025-12-17
+
+### 🛒 Enhanced - Cart Validation (Dual Pricing Support)
+
+#### Breaking Change: Relaxed Quantity Validation
+
+**Before:**
+- ❌ `quantity` must be `> 0` (rejected `quantity = 0`)
+- ❌ `quantityPcs` must be `> 0` (rejected `quantityPcs = 0`)
+
+**After:**
+- ✅ `quantity` can be `>= 0` (accepts `0`, `null`, or positive numbers)
+- ✅ `quantityPcs` can be `>= 0` (accepts `0`, `null`, or positive numbers)
+- ✅ At least **one field must be `> 0`** (both cannot be `0` or `null`)
+
+#### Affected Components
+
+**Cart Models (`lib/src/api/models/cart_models.dart`)**
+- **AddCartRequest.isValid()** - Updated validation to allow `quantity >= 0` and `quantityPcs >= 0`
+  - Validates that at least one quantity is `> 0`
+  - Checks for negative values (rejected)
+  - Prevents both quantities from being zero
+- **UpdateCartRequest.isValid()** - Updated validation with same flexible rules
+  - Allows updating to `quantity = 0` or `quantityPcs = 0`
+  - Ensures at least one quantity is valid when updating quantities
+
+#### Semantic Meaning
+
+- **`quantity = 0`** → Item **NOT sold per kg**, only per pcs
+- **`quantity_pcs = 0`** → Item **NOT sold per pcs**, only per kg
+- **Both `> 0`** → Item sold with **dual pricing**
+
+#### Valid Examples
+
+```dart
+// Per Kg Only
+AddCartRequest(quantity: 2.5, quantityPcs: null) // or quantityPcs: 0
+
+// Per Pcs Only (NOW WORKS!)
+AddCartRequest(quantity: 0, quantityPcs: 10)     // Previously rejected
+
+// Dual Pricing
+AddCartRequest(quantity: 1.5, quantityPcs: 8)
+```
+
+#### Documentation
+- **Updated 04_CART_TRANSACTION.md** - Added "Quantity Validation Rules" section
+  - Explains new validation logic
+  - Provides examples for all pricing types
+  - Shows invalid scenarios
+
+### 🔄 Backward Compatibility
+- ✅ **100% Backward Compatible**
+- Existing valid requests remain valid
+- New valid scenarios now supported
+
+### 🎯 Benefits
+- Fixes Per Pcs item validation issue
+- Full support for dual pricing
+- More flexible and semantic quantity handling
+- Aligns SDK with backend API update (v1.1.0)
+
+---
+
+## 2025-12-16
 
 ### 🔐 Added - Ownership Verification (Security Enhancement)
 
