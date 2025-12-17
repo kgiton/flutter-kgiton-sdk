@@ -57,6 +57,16 @@ class ItemUpdated extends ItemState {
 /// Item deleted successfully
 class ItemDeleted extends ItemState {}
 
+/// All items cleared successfully
+class ItemsCleared extends ItemState {
+  final int count;
+
+  const ItemsCleared(this.count);
+
+  @override
+  List<Object?> get props => [count];
+}
+
 /// Error state
 class ItemError extends ItemState {
   final String message;

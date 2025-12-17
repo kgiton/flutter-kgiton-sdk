@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/item.dart';
+import '../../domain/usecases/clear_all_items_usecase.dart';
 import '../../domain/usecases/create_item_usecase.dart';
-import '../../domain/usecases/delete_item_permanent_usecase.dart';
 import '../../domain/usecases/delete_item_usecase.dart';
 import '../../domain/usecases/get_item_by_id_usecase.dart';
 import '../../domain/usecases/get_items_usecase.dart';
@@ -18,7 +18,7 @@ class ItemBloc extends Bloc<ItemEvent, ItemState> {
   final CreateItemUseCase createItemUseCase;
   final UpdateItemUseCase updateItemUseCase;
   final DeleteItemUseCase deleteItemUseCase;
-  final DeleteItemPermanentUseCase deleteItemPermanentUseCase;
+  final ClearAllItemsUseCase clearAllItemsUseCase;
 
   ItemBloc({
     required this.getItemsUseCase,
@@ -26,14 +26,14 @@ class ItemBloc extends Bloc<ItemEvent, ItemState> {
     required this.createItemUseCase,
     required this.updateItemUseCase,
     required this.deleteItemUseCase,
-    required this.deleteItemPermanentUseCase,
+    required this.clearAllItemsUseCase,
   }) : super(ItemInitial()) {
     on<LoadItemsEvent>(_onLoadItems);
     on<LoadItemByIdEvent>(_onLoadItemById);
     on<CreateItemEvent>(_onCreateItem);
     on<UpdateItemEvent>(_onUpdateItem);
     on<DeleteItemEvent>(_onDeleteItem);
-    on<DeleteItemPermanentEvent>(_onDeleteItemPermanent);
+    on<ClearAllItemsEvent>(_onClearAllItems);
   }
 
   Future<void> _onLoadItems(LoadItemsEvent event, Emitter<ItemState> emit) async {
@@ -56,6 +56,7 @@ class ItemBloc extends Bloc<ItemEvent, ItemState> {
     emit(ItemLoading());
 
     final params = CreateItemParams(
+      licenseKey: event.licenseKey,
       name: event.name,
       unit: event.unit,
       price: event.price,
@@ -93,11 +94,11 @@ class ItemBloc extends Bloc<ItemEvent, ItemState> {
     result.fold((failure) => emit(ItemError(failure.message)), (success) => emit(ItemDeleted()));
   }
 
-  Future<void> _onDeleteItemPermanent(DeleteItemPermanentEvent event, Emitter<ItemState> emit) async {
+  Future<void> _onClearAllItems(ClearAllItemsEvent event, Emitter<ItemState> emit) async {
     emit(ItemLoading());
 
-    final result = await deleteItemPermanentUseCase(event.itemId);
+    final result = await clearAllItemsUseCase();
 
-    result.fold((failure) => emit(ItemError(failure.message)), (success) => emit(ItemDeleted()));
+    result.fold((failure) => emit(ItemError(failure.message)), (count) => emit(ItemsCleared(count)));
   }
 }

@@ -18,6 +18,15 @@ abstract class AuthRemoteDataSource {
 
   /// Get current user data from API
   Future<UserModel> getCurrentUser();
+
+  /// Request password reset via email
+  Future<void> forgotPassword(String email);
+
+  /// Reset password using token from email
+  Future<void> resetPassword(String token, String newPassword);
+
+  /// Change password for authenticated user
+  Future<void> changePassword(String oldPassword, String newPassword);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -98,6 +107,35 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       // Get user data from stored token or API
       // For now, we'll throw an exception as SDK doesn't have this method
       throw UnimplementedError('Get current user not implemented in SDK');
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    try {
+      // Note: Deep link redirect URL dikonfigurasi di backend/Supabase Dashboard
+      // URL: io.supabase.kgitonapp://reset-password
+      await apiService.auth.forgotPassword(email: email);
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> resetPassword(String token, String newPassword) async {
+    try {
+      await apiService.auth.resetPassword(token: token, newPassword: newPassword);
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    try {
+      await apiService.auth.changePassword(oldPassword: oldPassword, newPassword: newPassword);
     } catch (e) {
       throw ServerException(message: e.toString());
     }

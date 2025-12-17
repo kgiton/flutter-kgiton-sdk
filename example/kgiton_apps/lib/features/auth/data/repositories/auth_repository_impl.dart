@@ -47,6 +47,7 @@ class AuthRepositoryImpl implements AuthRepository {
       try {
         final userModel = await remoteDataSource.register(name, email, password, licenseKey, entityType, companyName);
         await localDataSource.cacheUser(userModel);
+        await localDataSource.cacheLicenseKey(licenseKey);
         return Right(userModel.toEntity());
       } on ServerException catch (e) {
         return Left(ServerFailure(message: e.message, code: e.code));
@@ -68,6 +69,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await localDataSource.clearCachedUser();
       await localDataSource.clearCachedToken();
+      await localDataSource.clearCachedLicenseKey();
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message, code: e.code));
@@ -107,6 +109,71 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Right(null);
       } on ServerException catch (e) {
         return Left(ServerFailure(message: e.message, code: e.code));
+      } catch (e) {
+        return Left(ServerFailure(message: 'Unexpected error: $e'));
+      }
+    } else {
+      return const Left(NetworkFailure(message: 'No internet connection'));
+    }
+  }
+
+  @override
+  Future<String?> getLicenseKey() async {
+    try {
+      return await localDataSource.getCachedLicenseKey();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> forgotPassword({required String email}) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.forgotPassword(email);
+        return const Right(null);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message, code: e.code));
+      } on ValidationException catch (e) {
+        return Left(ValidationFailure(message: e.message, code: e.code));
+      } catch (e) {
+        return Left(ServerFailure(message: 'Unexpected error: $e'));
+      }
+    } else {
+      return const Left(NetworkFailure(message: 'No internet connection'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resetPassword({required String token, required String newPassword}) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.resetPassword(token, newPassword);
+        return const Right(null);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message, code: e.code));
+      } on ValidationException catch (e) {
+        return Left(ValidationFailure(message: e.message, code: e.code));
+      } catch (e) {
+        return Left(ServerFailure(message: 'Unexpected error: $e'));
+      }
+    } else {
+      return const Left(NetworkFailure(message: 'No internet connection'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> changePassword({required String oldPassword, required String newPassword}) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.changePassword(oldPassword, newPassword);
+        return const Right(null);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message, code: e.code));
+      } on AuthenticationException catch (e) {
+        return Left(AuthenticationFailure(message: e.message, code: e.code));
+      } on ValidationException catch (e) {
+        return Left(ValidationFailure(message: e.message, code: e.code));
       } catch (e) {
         return Left(ServerFailure(message: 'Unexpected error: $e'));
       }

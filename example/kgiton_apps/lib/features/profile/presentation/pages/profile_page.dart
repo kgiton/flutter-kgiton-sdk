@@ -133,6 +133,7 @@ class ProfilePage extends StatelessWidget {
                         );
                       },
                     ),
+                    _MenuItem(icon: Icons.lock_outline, title: 'Change Password', onTap: () => context.push('/change-password')),
                     _MenuItem(
                       icon: Icons.settings,
                       title: 'Settings',

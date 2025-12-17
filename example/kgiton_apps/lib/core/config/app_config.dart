@@ -7,6 +7,7 @@ class AppConfig {
   AppConfig._();
 
   /// API Configuration
+  /// TODO: Update with actual API base URL and version
   static const String apiBaseUrl = 'https://api.example.com';
   static const String apiVersion = 'v1.0.0';
 

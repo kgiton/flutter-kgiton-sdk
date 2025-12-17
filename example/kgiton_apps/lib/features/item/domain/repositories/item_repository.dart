@@ -12,6 +12,7 @@ abstract class ItemRepository {
 
   /// Create a new item
   Future<Either<Failure, Item>> createItem({
+    required String licenseKey,
     required String name,
     required String unit,
     required double price,
@@ -29,9 +30,9 @@ abstract class ItemRepository {
     String? description,
   });
 
-  /// Delete an item (soft delete)
+  /// Delete an item (permanent - cannot be undone)
   Future<Either<Failure, bool>> deleteItem(String itemId);
 
-  /// Permanently delete an item
-  Future<Either<Failure, bool>> deleteItemPermanent(String itemId);
+  /// Clear all items for the authenticated user (permanent - cannot be undone)
+  Future<Either<Failure, int>> clearAllItems();
 }

@@ -47,6 +47,7 @@ class ItemRepositoryImpl implements ItemRepository {
 
   @override
   Future<Either<Failure, Item>> createItem({
+    required String licenseKey,
     required String name,
     required String unit,
     required double price,
@@ -55,7 +56,14 @@ class ItemRepositoryImpl implements ItemRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final item = await remoteDataSource.createItem(name: name, unit: unit, price: price, pricePerPcs: pricePerPcs, description: description);
+        final item = await remoteDataSource.createItem(
+          licenseKey: licenseKey,
+          name: name,
+          unit: unit,
+          price: price,
+          pricePerPcs: pricePerPcs,
+          description: description,
+        );
         return Right(item.toEntity());
       } on ServerException catch (e) {
         return Left(ServerFailure(message: e.message, code: e.code));
@@ -114,11 +122,11 @@ class ItemRepositoryImpl implements ItemRepository {
   }
 
   @override
-  Future<Either<Failure, bool>> deleteItemPermanent(String itemId) async {
+  Future<Either<Failure, int>> clearAllItems() async {
     if (await networkInfo.isConnected) {
       try {
-        final result = await remoteDataSource.deleteItemPermanent(itemId);
-        return Right(result);
+        final count = await remoteDataSource.deleteAllItems();
+        return Right(count);
       } on ServerException catch (e) {
         return Left(ServerFailure(message: e.message, code: e.code));
       } on Exception catch (e) {

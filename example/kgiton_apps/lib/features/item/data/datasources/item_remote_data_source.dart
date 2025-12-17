@@ -11,16 +11,16 @@ abstract class ItemRemoteDataSource {
   Future<ItemModel> getItemById(String itemId);
 
   /// Create a new item
-  Future<ItemModel> createItem({required String name, required String unit, required double price, double? pricePerPcs, String? description});
+  Future<ItemModel> createItem({required String licenseKey, required String name, required String unit, required double price, double? pricePerPcs, String? description});
 
   /// Update an existing item
   Future<ItemModel> updateItem({required String itemId, String? name, String? unit, double? price, double? pricePerPcs, String? description});
 
-  /// Delete an item (soft delete)
+  /// Delete an item (permanent - cannot be undone)
   Future<bool> deleteItem(String itemId);
 
-  /// Permanently delete an item
-  Future<bool> deleteItemPermanent(String itemId);
+  /// Permanently delete all items (cannot be undone)
+  Future<int> deleteAllItems();
 }
 
 class ItemRemoteDataSourceImpl implements ItemRemoteDataSource {
@@ -33,10 +33,7 @@ class ItemRemoteDataSourceImpl implements ItemRemoteDataSource {
     try {
       final itemListData = await apiService.owner.listAllItems();
 
-      // Filter active items only
-      final filteredItems = itemListData.items.where((item) => item.isActive).toList();
-
-      return filteredItems.map((sdkItem) => ItemModel.fromSdkItem(sdkItem)).toList();
+      return itemListData.items.map((sdkItem) => ItemModel.fromSdkItem(sdkItem)).toList();
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -55,9 +52,16 @@ class ItemRemoteDataSourceImpl implements ItemRemoteDataSource {
   }
 
   @override
-  Future<ItemModel> createItem({required String name, required String unit, required double price, double? pricePerPcs, String? description}) async {
+  Future<ItemModel> createItem({required String licenseKey, required String name, required String unit, required double price, double? pricePerPcs, String? description}) async {
     try {
-      final sdkItem = await apiService.owner.createItem(name: name, unit: unit, price: price, pricePerPcs: pricePerPcs, description: description);
+      final sdkItem = await apiService.owner.createItem(
+        licenseKey: licenseKey,
+        name: name,
+        unit: unit,
+        price: price,
+        pricePerPcs: pricePerPcs,
+        description: description,
+      );
 
       return ItemModel.fromSdkItem(sdkItem);
     } catch (e) {
@@ -93,11 +97,10 @@ class ItemRemoteDataSourceImpl implements ItemRemoteDataSource {
   }
 
   @override
-  Future<bool> deleteItemPermanent(String itemId) async {
+  Future<int> deleteAllItems() async {
     try {
-      // SDK owner service uses deleteItem for both soft and hard delete
-      // Using soft delete as fallback
-      return await apiService.owner.deleteItem(itemId);
+      final result = await apiService.owner.deleteAllItems();
+      return result.count;
     } catch (e) {
       throw ServerException(message: e.toString());
     }

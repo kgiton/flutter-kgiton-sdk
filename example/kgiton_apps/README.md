@@ -2,9 +2,21 @@
 
 Flutter application integrated with KGiTON SDK for scale device management and authentication.
 
+## ⭐ New: Ownership Verification
+
+**Version 1.1.0** includes enhanced security with **Ownership Verification** feature:
+
+- 🔒 **Secure Connections**: Only legitimate license owners can connect to their devices
+- ✅ **Auto Verification**: Automatically enabled after login
+- 🛡️ **Multi-tenant Safe**: Prevents unauthorized access even if license key is known
+- 📝 **Audit Trail**: All connections verified with user identity
+
+See [OWNERSHIP_VERIFICATION_IMPLEMENTATION.md](OWNERSHIP_VERIFICATION_IMPLEMENTATION.md) for details.
+
 ## Features
 
 - 🔐 **Authentication System**: Login and Registration with license key
+- 🔒 **Ownership Verification**: Secure device access with user authentication (NEW)
 - 📱 **Bluetooth Integration**: Connect to KGiTON scale devices via QR scan
 - ⚖️ **Real-time Weight**: Stream weight data from connected scales
 - 🛒 **Shopping Cart**: Add items to cart and manage transactions

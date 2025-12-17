@@ -25,6 +25,15 @@ abstract class AuthLocalDataSource {
 
   /// Clear cached authentication token
   Future<void> clearCachedToken();
+
+  /// Cache license key
+  Future<void> cacheLicenseKey(String licenseKey);
+
+  /// Get cached license key
+  Future<String?> getCachedLicenseKey();
+
+  /// Clear cached license key
+  Future<void> clearCachedLicenseKey();
 }
 
 class AuthLocalDataSourceImpl implements AuthLocalDataSource {
@@ -32,6 +41,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
 
   static const String cachedUserKey = 'CACHED_USER';
   static const String cachedTokenKey = 'CACHED_TOKEN';
+  static const String cachedLicenseKey = 'CACHED_LICENSE_KEY';
 
   AuthLocalDataSourceImpl({required this.sharedPreferences});
 
@@ -106,6 +116,33 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
       await sharedPreferences.remove(cachedTokenKey);
     } catch (e) {
       throw CacheException(message: 'Failed to clear cached token: $e');
+    }
+  }
+
+  @override
+  Future<void> cacheLicenseKey(String licenseKey) async {
+    try {
+      await sharedPreferences.setString(cachedLicenseKey, licenseKey);
+    } catch (e) {
+      throw CacheException(message: 'Failed to cache license key: $e');
+    }
+  }
+
+  @override
+  Future<String?> getCachedLicenseKey() async {
+    try {
+      return sharedPreferences.getString(cachedLicenseKey);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> clearCachedLicenseKey() async {
+    try {
+      await sharedPreferences.remove(cachedLicenseKey);
+    } catch (e) {
+      throw CacheException(message: 'Failed to clear cached license key: $e');
     }
   }
 }

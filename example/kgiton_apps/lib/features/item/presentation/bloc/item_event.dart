@@ -28,16 +28,17 @@ class LoadItemByIdEvent extends ItemEvent {
 
 /// Event to create a new item
 class CreateItemEvent extends ItemEvent {
+  final String licenseKey;
   final String name;
   final String unit;
   final double price;
   final double? pricePerPcs;
   final String? description;
 
-  const CreateItemEvent({required this.name, required this.unit, required this.price, this.pricePerPcs, this.description});
+  const CreateItemEvent({required this.licenseKey, required this.name, required this.unit, required this.price, this.pricePerPcs, this.description});
 
   @override
-  List<Object?> get props => [name, unit, price, pricePerPcs, description];
+  List<Object?> get props => [licenseKey, name, unit, price, pricePerPcs, description];
 }
 
 /// Event to update an item
@@ -55,7 +56,7 @@ class UpdateItemEvent extends ItemEvent {
   List<Object?> get props => [itemId, name, unit, price, pricePerPcs, description];
 }
 
-/// Event to delete an item (soft delete)
+/// Event to delete an item (permanent - cannot be undone)
 class DeleteItemEvent extends ItemEvent {
   final String itemId;
 
@@ -65,12 +66,10 @@ class DeleteItemEvent extends ItemEvent {
   List<Object?> get props => [itemId];
 }
 
-/// Event to permanently delete an item
-class DeleteItemPermanentEvent extends ItemEvent {
-  final String itemId;
-
-  const DeleteItemPermanentEvent(this.itemId);
+/// Event to clear all items
+class ClearAllItemsEvent extends ItemEvent {
+  const ClearAllItemsEvent();
 
   @override
-  List<Object?> get props => [itemId];
+  List<Object?> get props => [];
 }

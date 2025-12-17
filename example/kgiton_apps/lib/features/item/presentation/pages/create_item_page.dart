@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/kgiton_theme_colors.dart';
 import '../../../../core/utils/currency_input_formatter.dart';
 import '../../../auth/presentation/widgets/custom_button.dart';
 import '../../../auth/presentation/widgets/custom_text_field.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
+import '../../../auth/data/datasources/auth_local_data_source.dart';
 import '../bloc/item_bloc.dart';
 
 /// Pricing type for item
@@ -45,7 +48,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
     super.dispose();
   }
 
-  void _handleCreate() {
+  void _handleCreate() async {
     if (_formKey.currentState!.validate()) {
       double price = 0;
       double? pricePerPcs;
@@ -66,8 +69,34 @@ class _CreateItemPageState extends State<CreateItemPage> {
           break;
       }
 
+      // Get license key from authenticated user (saved during scale connection)
+      debugPrint('Attempting to get license key from AuthRepository...');
+      final authRepository = sl<AuthRepository>();
+      final licenseKey = await authRepository.getLicenseKey();
+
+      // Debug log
+      debugPrint('License key retrieved from AuthRepository: $licenseKey');
+
+      // Also check directly from local data source
+      final localKey = await sl<AuthLocalDataSource>().getCachedLicenseKey();
+      debugPrint('License key from local cache: $localKey');
+
+      if (licenseKey == null || licenseKey.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No scale device connected. Please connect to a scale first.'), backgroundColor: KgitonThemeColors.errorRed),
+          );
+          // Redirect to scale connection page
+          context.go('/scale-connection');
+        }
+        return;
+      }
+
+      if (!mounted) return;
+
       context.read<ItemBloc>().add(
         CreateItemEvent(
+          licenseKey: licenseKey,
           name: _nameController.text.trim(),
           unit: _selectedPricingType.unit,
           price: price,
@@ -94,7 +123,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
               context,
             ).showSnackBar(const SnackBar(content: Text('Item created successfully'), backgroundColor: KgitonThemeColors.successGreen));
             if (context.mounted) {
-              context.pop();
+              context.pop(true); // Return true to indicate success
             }
           } else if (state is ItemError) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: KgitonThemeColors.errorRed));
@@ -206,6 +235,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
                         label: 'Price Per Piece (Rp)',
                         hint: 'e.g., 2.500',
                         keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
                         enabled: !isLoading,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly, CurrencyInputFormatter()],
                         validator: (value) {
@@ -229,6 +259,7 @@ class _CreateItemPageState extends State<CreateItemPage> {
                       hint: 'Enter item description',
                       maxLines: 3,
                       enabled: !isLoading,
+                      textInputAction: TextInputAction.done,
                     ),
                     const SizedBox(height: 32),
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/kgiton_theme_colors.dart';
 import '../bloc/auth_bloc.dart';
 import '../widgets/custom_button.dart';
@@ -106,10 +107,21 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             const SizedBox(height: 8),
             Row(
-              children: const [
-                Icon(Icons.phone, color: KgitonThemeColors.primaryGreen, size: 18),
-                SizedBox(width: 8),
-                Text('+62 819-9479-0864', style: TextStyle(color: KgitonThemeColors.textPrimary)),
+              children: [
+                const Icon(Icons.phone, color: KgitonThemeColors.primaryGreen, size: 18),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final Uri url = Uri.parse('https://wa.me/6281994790864');
+                    if (!await launchUrl(url)) {
+                      throw Exception('Could not launch $url');
+                    }
+                  },
+                  child: const Text(
+                    '+62 819-9479-0864',
+                    style: TextStyle(color: KgitonThemeColors.primaryGreen, decoration: TextDecoration.underline),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -153,7 +165,7 @@ class _RegisterPageState extends State<RegisterPage> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
-            context.go('/home');
+            context.go('/scale-connection');
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: KgitonThemeColors.errorRed));
           }
@@ -200,6 +212,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         enabled: !isLoading,
                         inputFormatters: [_licenseKeyFormatter],
                         textCapitalization: TextCapitalization.characters,
+                        textInputAction: TextInputAction.done,
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.qr_code_scanner, color: KgitonThemeColors.primaryGreen),
                           onPressed: isLoading ? null : _scanQRCode,
@@ -425,6 +438,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         hint: 'Confirm your password',
                         obscureText: _obscureConfirmPassword,
                         enabled: !isLoading,
+                        textInputAction: TextInputAction.done,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,

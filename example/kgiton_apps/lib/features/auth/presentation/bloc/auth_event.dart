@@ -50,3 +50,35 @@ class LogoutRequested extends AuthEvent {
 class CheckAuthStatus extends AuthEvent {
   const CheckAuthStatus();
 }
+
+/// Event to request forgot password
+class ForgotPasswordRequested extends AuthEvent {
+  final String email;
+
+  const ForgotPasswordRequested({required this.email});
+
+  @override
+  List<Object?> get props => [email];
+}
+
+/// Event to request password reset with token
+class ResetPasswordRequested extends AuthEvent {
+  final String token;
+  final String newPassword;
+
+  const ResetPasswordRequested({required this.token, required this.newPassword});
+
+  @override
+  List<Object?> get props => [token, newPassword];
+}
+
+/// Event to request password change for authenticated user
+class ChangePasswordRequested extends AuthEvent {
+  final String oldPassword;
+  final String newPassword;
+
+  const ChangePasswordRequested({required this.oldPassword, required this.newPassword});
+
+  @override
+  List<Object?> get props => [oldPassword, newPassword];
+}

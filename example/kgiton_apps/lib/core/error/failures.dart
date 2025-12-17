@@ -14,6 +14,17 @@ abstract class Failure extends Equatable {
 /// Server failure - when API call fails
 class ServerFailure extends Failure {
   const ServerFailure({required super.message, super.code});
+
+  /// Check if this failure is due to session expiry
+  bool get isSessionExpired {
+    final lowerMessage = message.toLowerCase();
+    return lowerMessage.contains('no token provided') ||
+        lowerMessage.contains('token expired') ||
+        lowerMessage.contains('invalid token') ||
+        lowerMessage.contains('unauthorized') ||
+        lowerMessage.contains('unauthenticated') ||
+        code == 401;
+  }
 }
 
 /// Cache failure - when local storage fails
@@ -39,4 +50,9 @@ class AuthenticationFailure extends Failure {
 /// Authorization failure - when user doesn't have permission
 class AuthorizationFailure extends Failure {
   const AuthorizationFailure({required super.message, super.code});
+}
+
+/// Session expired failure - when token is invalid or expired
+class SessionExpiredFailure extends Failure {
+  const SessionExpiredFailure({required super.message, super.code});
 }

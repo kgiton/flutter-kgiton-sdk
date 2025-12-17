@@ -13,14 +13,17 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
+class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  bool _permissionDialogShown = false;
+  bool _isCheckingPermission = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // Initialize animations
     _controller = AnimationController(duration: const Duration(milliseconds: 1500), vsync: this);
@@ -45,6 +48,44 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     _initializeApp();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // When app comes back from settings, recheck permissions
+    if (state == AppLifecycleState.resumed && _permissionDialogShown && !_isCheckingPermission) {
+      _recheckPermissions();
+    }
+  }
+
+  /// Recheck permissions after returning from settings
+  Future<void> _recheckPermissions() async {
+    if (_isCheckingPermission) return;
+
+    _isCheckingPermission = true;
+    await Future.delayed(const Duration(milliseconds: 500)); // Small delay to ensure settings are closed
+
+    if (!mounted) {
+      _isCheckingPermission = false;
+      return;
+    }
+
+    final hasPermissions = await PermissionHelper.checkBLEPermissions();
+    if (hasPermissions) {
+      // Permission granted, proceed with authentication check
+      _permissionDialogShown = false;
+      if (mounted) {
+        context.read<AuthBloc>().add(const CheckAuthStatus());
+      }
+    }
+    _isCheckingPermission = false;
+  }
+
   /// Initialize app with permission request
   Future<void> _initializeApp() async {
     // Wait for animation
@@ -57,6 +98,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
       final granted = await PermissionHelper.requestBLEPermissions();
       if (!granted) {
         if (!mounted) return;
+        _permissionDialogShown = true;
         final errorMsg = await PermissionHelper.getPermissionErrorMessage();
         _showPermissionDialog(errorMsg);
         return;
@@ -73,19 +115,28 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: KgitonThemeColors.cardBackground,
         title: const Text('Permission Required', style: TextStyle(color: KgitonThemeColors.textPrimary)),
         content: Text(message, style: const TextStyle(color: KgitonThemeColors.textSecondary)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel', style: TextStyle(color: KgitonThemeColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
-              await PermissionHelper.openAppSettings();
+              try {
+                await PermissionHelper.openAppSettings();
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+              } catch (e) {
+                debugPrint('Error opening app settings: $e');
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: KgitonThemeColors.primaryGreen),
             child: const Text('Open Settings', style: TextStyle(color: KgitonThemeColors.backgroundDark)),
@@ -96,23 +147,24 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: KgitonThemeColors.backgroundDark,
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is Authenticated) {
-            context.go('/home');
-          } else if (state is Unauthenticated) {
-            context.go('/login');
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) async {
+              if (state is Authenticated) {
+                // After authenticated, proceed directly to scale connection
+                // All users already have license key
+                await Future.delayed(const Duration(milliseconds: 300));
+                if (context.mounted) context.go('/scale-connection');
+              } else if (state is Unauthenticated) {
+                context.go('/login');
+              }
+            },
+          ),
+        ],
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

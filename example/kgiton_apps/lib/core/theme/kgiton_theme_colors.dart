@@ -29,6 +29,8 @@ class KgitonThemeColors {
   static const Color errorRed = Color(0xFFF93E3E); // Error messages, required fields
   static const Color successGreen = Color(0xFF4CAF50); // Success messages
   static const Color warningYellow = Color(0xFFFFC107); // Warning messages
+  static const Color infoBlue = Color(0xFF2196F3); // Info messages, refunded status
+  static const Color expiredOrange = Color(0xFFFF9800); // Expired status
   static const Color linkColor = Color(0xFFB6F500); // Links (same as primary green)
   static const Color linkHover = Color(0xFFA0E000); // Link hover state
 

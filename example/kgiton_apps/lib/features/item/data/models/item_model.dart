@@ -6,12 +6,12 @@ class ItemModel extends Item {
   const ItemModel({
     required super.id,
     required super.ownerId,
+    required super.licenseKey,
     required super.name,
     required super.unit,
     required super.price,
     super.pricePerPcs,
     super.description,
-    super.isActive,
     required super.createdAt,
     super.updatedAt,
   });
@@ -21,12 +21,12 @@ class ItemModel extends Item {
     return ItemModel(
       id: sdkItem.id,
       ownerId: sdkItem.ownerId,
+      licenseKey: sdkItem.licenseKey,
       name: sdkItem.name,
       unit: sdkItem.unit,
       price: sdkItem.price,
       pricePerPcs: sdkItem.pricePerPcs,
       description: sdkItem.description,
-      isActive: sdkItem.isActive,
       createdAt: sdkItem.createdAt,
       updatedAt: sdkItem.updatedAt,
     );
@@ -37,12 +37,12 @@ class ItemModel extends Item {
     return Item(
       id: id,
       ownerId: ownerId,
+      licenseKey: licenseKey,
       name: name,
       unit: unit,
       price: price,
       pricePerPcs: pricePerPcs,
       description: description,
-      isActive: isActive,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

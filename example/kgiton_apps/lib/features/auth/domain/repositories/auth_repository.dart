@@ -34,4 +34,20 @@ abstract class AuthRepository {
   /// Refresh authentication token
   /// Returns [void] if successful, [Failure] otherwise
   Future<Either<Failure, void>> refreshToken();
+
+  /// Get cached license key
+  /// Returns license key string if available
+  Future<String?> getLicenseKey();
+
+  /// Request password reset via email
+  /// Returns [void] if successful, [Failure] otherwise
+  Future<Either<Failure, void>> forgotPassword({required String email});
+
+  /// Reset password using token from email
+  /// Returns [void] if successful, [Failure] otherwise
+  Future<Either<Failure, void>> resetPassword({required String token, required String newPassword});
+
+  /// Change password for authenticated user
+  /// Returns [void] if successful, [Failure] otherwise
+  Future<Either<Failure, void>> changePassword({required String oldPassword, required String newPassword});
 }

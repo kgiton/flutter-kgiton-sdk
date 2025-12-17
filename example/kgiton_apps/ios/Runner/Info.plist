@@ -49,5 +49,18 @@
 	<string>This app requires wireless access to connect to the KGiTON scale device</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Location permission is required to discover nearby Bluetooth devices</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>io.supabase.kgitonapp</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.kgitonapp</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

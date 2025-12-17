@@ -2,7 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../repositories/item_repository.dart';
 
-/// UseCase for deleting an item (soft delete)
+/// UseCase for permanently deleting an item (cannot be undone)
 class DeleteItemUseCase {
   final ItemRepository repository;
 

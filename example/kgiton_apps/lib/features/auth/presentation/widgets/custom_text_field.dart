@@ -19,6 +19,7 @@ class CustomTextField extends StatelessWidget {
   final bool readOnly;
   final List<TextInputFormatter>? inputFormatters;
   final TextCapitalization? textCapitalization;
+  final TextInputAction? textInputAction;
 
   const CustomTextField({
     super.key,
@@ -37,6 +38,7 @@ class CustomTextField extends StatelessWidget {
     this.readOnly = false,
     this.inputFormatters,
     this.textCapitalization,
+    this.textInputAction,
   });
 
   @override
@@ -73,6 +75,7 @@ class CustomTextField extends StatelessWidget {
           readOnly: readOnly,
           inputFormatters: inputFormatters,
           textCapitalization: textCapitalization ?? TextCapitalization.none,
+          textInputAction: textInputAction ?? TextInputAction.next,
           style: TextStyle(color: enabled ? KgitonThemeColors.textPrimary : KgitonThemeColors.textDisabled),
           decoration: InputDecoration(
             hintText: hint,

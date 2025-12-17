@@ -123,7 +123,7 @@ class _EditItemPageState extends State<EditItemPage> {
               context,
             ).showSnackBar(const SnackBar(content: Text('Item updated successfully'), backgroundColor: KgitonThemeColors.successGreen));
             if (context.mounted) {
-              context.pop();
+              context.pop(true); // Return true to indicate success
             }
           } else if (state is ItemError) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: KgitonThemeColors.errorRed));
@@ -146,6 +146,7 @@ class _EditItemPageState extends State<EditItemPage> {
                       label: 'Item Name',
                       hint: 'e.g., Apple, Banana',
                       enabled: !isLoading,
+                      textInputAction: TextInputAction.done,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter item name';
@@ -216,6 +217,7 @@ class _EditItemPageState extends State<EditItemPage> {
                         hint: 'e.g., 15.000',
                         keyboardType: TextInputType.number,
                         enabled: !isLoading,
+                        textInputAction: TextInputAction.done,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly, CurrencyInputFormatter()],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -238,6 +240,7 @@ class _EditItemPageState extends State<EditItemPage> {
                         label: 'Price Per Piece (Rp)',
                         hint: 'e.g., 2.500',
                         keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
                         enabled: !isLoading,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly, CurrencyInputFormatter()],
                         validator: (value) {
@@ -261,6 +264,7 @@ class _EditItemPageState extends State<EditItemPage> {
                       hint: 'Enter item description',
                       maxLines: 3,
                       enabled: !isLoading,
+                      textInputAction: TextInputAction.done,
                     ),
                     const SizedBox(height: 32),
 

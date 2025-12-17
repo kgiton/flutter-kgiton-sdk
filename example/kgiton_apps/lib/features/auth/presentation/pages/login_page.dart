@@ -40,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
-            context.go('/home');
+            context.go('/scale-connection');
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: KgitonThemeColors.errorRed));
           }
@@ -105,6 +105,7 @@ class _LoginPageState extends State<LoginPage> {
                         hint: 'Enter your password',
                         obscureText: _obscurePassword,
                         enabled: !isLoading,
+                        textInputAction: TextInputAction.done,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -130,6 +131,20 @@ class _LoginPageState extends State<LoginPage> {
 
                       // Login Button
                       CustomButton(text: 'Sign In', onPressed: isLoading ? null : _handleLogin, isLoading: isLoading),
+                      const SizedBox(height: 16),
+
+                      // Forgot Password Link
+                      Center(
+                        child: GestureDetector(
+                          onTap: isLoading ? null : () => context.push('/forgot-password'),
+                          child: Text(
+                            'Forgot Password?',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(color: KgitonThemeColors.primaryGreen, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 24),
 
                       // Register Link
