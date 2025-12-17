@@ -25,7 +25,7 @@ class KgitonTransactionService {
   ///
   /// [page] - Page number (default: 1)
   /// [limit] - Items per page (default: 20)
-  /// [status] - Filter by payment status: PENDING, PAID, EXPIRED, CANCELLED, REFUNDED (optional)
+  /// [status] - Filter by payment status: PENDING, PAID, EXPIRED, CANCELLED (optional)
   /// [startDate] - Filter transactions from this date (optional)
   /// [endDate] - Filter transactions until this date (optional)
   ///

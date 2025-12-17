@@ -13,7 +13,7 @@ class Transaction {
   final double totalAmount;
   final String paymentMethod; // QRIS, CASH, BANK_TRANSFER
   final String paymentGateway; // external, xendit, midtrans, internal
-  final String paymentStatus; // PENDING, PAID, EXPIRED, CANCELLED, REFUNDED
+  final String paymentStatus; // PENDING, PAID, EXPIRED, CANCELLED
   final String? qrisString; // QRIS code (only if payment_method = QRIS)
   final DateTime? qrisExpiredAt; // QRIS expiry time (2 minutes)
   final String? notes;
@@ -426,5 +426,4 @@ class PaymentStatus {
   static const String paid = 'PAID';
   static const String expired = 'EXPIRED';
   static const String cancelled = 'CANCELLED';
-  static const String refunded = 'REFUNDED';
 }
