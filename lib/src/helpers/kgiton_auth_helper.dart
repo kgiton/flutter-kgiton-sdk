@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/kgiton_api_service.dart';
-import '../api/models/auth_models.dart' show AuthData;
+import '../api/models/auth_models.dart';
 
 /// Helper service untuk authentication dan session management
 ///
@@ -8,17 +8,27 @@ import '../api/models/auth_models.dart' show AuthData;
 /// - Login/Register/Logout
 /// - Token management (save/load/clear)
 /// - User info storage
+/// - API key management
 /// - Automatic token injection ke API client
 ///
 /// Example:
 /// ```dart
 /// final prefs = await SharedPreferences.getInstance();
-/// final auth = KgitonAuthHelper(prefs, baseUrl: 'https://api.example.com');
+/// final auth = KgitonAuthHelper(prefs, baseUrl: 'https://api.kgiton.com');
+///
+/// // Register with license key
+/// final regResult = await auth.register(
+///   email: 'user@example.com',
+///   password: 'password123',
+///   name: 'John Doe',
+///   licenseKey: 'YOUR-LICENSE-KEY',
+/// );
 ///
 /// // Login
 /// final result = await auth.login('user@example.com', 'password');
-/// if (result.success) {
+/// if (result['success']) {
 ///   print('Logged in as: ${auth.getUserEmail()}');
+///   print('API Key: ${auth.getApiKey()}');
 /// }
 ///
 /// // Check login status
@@ -33,10 +43,12 @@ import '../api/models/auth_models.dart' show AuthData;
 class KgitonAuthHelper {
   // Storage keys
   static const String _tokenKey = 'kgiton_access_token';
-  static const String _refreshTokenKey = 'kgiton_refresh_token';
-  static const String _ownerIdKey = 'kgiton_owner_id';
+  static const String _tokenExpiresAtKey = 'kgiton_token_expires_at';
+  static const String _apiKeyKey = 'kgiton_api_key';
+  static const String _userIdKey = 'kgiton_user_id';
   static const String _userEmailKey = 'kgiton_user_email';
   static const String _userNameKey = 'kgiton_user_name';
+  static const String _referralCodeKey = 'kgiton_referral_code';
 
   final SharedPreferences _prefs;
   final KgitonApiService _apiService;
@@ -45,8 +57,7 @@ class KgitonAuthHelper {
   ///
   /// [prefs] - SharedPreferences instance for token storage
   /// [baseUrl] - API base URL
-  /// [customStoragePrefix] - Optional custom prefix for storage keys (default: 'kgiton_')
-  KgitonAuthHelper(this._prefs, {required String baseUrl, String? customStoragePrefix}) : _apiService = KgitonApiService(baseUrl: baseUrl);
+  KgitonAuthHelper(this._prefs, {required String baseUrl}) : _apiService = KgitonApiService(baseUrl: baseUrl);
 
   // ============================================
   // LOGIN STATUS
@@ -55,7 +66,19 @@ class KgitonAuthHelper {
   /// Check if user is logged in (has valid token)
   Future<bool> isLoggedIn() async {
     final token = getToken();
-    return token != null && token.isNotEmpty;
+    if (token == null || token.isEmpty) {
+      return false;
+    }
+
+    // Check token expiration
+    final expiresAt = getTokenExpiresAt();
+    if (expiresAt != null && DateTime.now().isAfter(expiresAt)) {
+      // Token expired, clear it
+      await _clearTokens();
+      return false;
+    }
+
+    return true;
   }
 
   // ============================================
@@ -67,39 +90,53 @@ class KgitonAuthHelper {
     return _prefs.getString(_tokenKey);
   }
 
-  /// Get stored refresh token
-  String? getRefreshToken() {
-    return _prefs.getString(_refreshTokenKey);
+  /// Get token expiration date
+  DateTime? getTokenExpiresAt() {
+    final expiresAtStr = _prefs.getString(_tokenExpiresAtKey);
+    if (expiresAtStr != null) {
+      return DateTime.tryParse(expiresAtStr);
+    }
+    return null;
   }
 
-  /// Save tokens to storage
-  Future<void> _saveTokens(AuthData authData) async {
+  /// Get stored API key
+  String? getApiKey() {
+    return _prefs.getString(_apiKeyKey);
+  }
+
+  /// Save auth data to storage
+  Future<void> _saveAuthData(AuthData authData) async {
     await _prefs.setString(_tokenKey, authData.accessToken);
-    if (authData.refreshToken != null) {
-      await _prefs.setString(_refreshTokenKey, authData.refreshToken!);
-    }
-    await _prefs.setString(_ownerIdKey, authData.user.id);
+
+    // Calculate expiration from session.expiresAt (unix timestamp in seconds)
+    final expiresAtDateTime = DateTime.fromMillisecondsSinceEpoch(authData.session.expiresAt * 1000);
+    await _prefs.setString(_tokenExpiresAtKey, expiresAtDateTime.toIso8601String());
+
+    await _prefs.setString(_userIdKey, authData.user.id);
     await _prefs.setString(_userEmailKey, authData.user.email);
-    // Note: User model doesn't have name field, only email
-    await _prefs.setString(_userNameKey, authData.user.email.split('@')[0]);
+    await _prefs.setString(_userNameKey, authData.user.name);
+    await _prefs.setString(_apiKeyKey, authData.user.apiKey);
+    await _prefs.setString(_referralCodeKey, authData.user.referralCode);
   }
 
   /// Clear all stored tokens and user data
   Future<void> _clearTokens() async {
     await _prefs.remove(_tokenKey);
-    await _prefs.remove(_refreshTokenKey);
-    await _prefs.remove(_ownerIdKey);
+    await _prefs.remove(_tokenExpiresAtKey);
+    await _prefs.remove(_apiKeyKey);
+    await _prefs.remove(_userIdKey);
     await _prefs.remove(_userEmailKey);
     await _prefs.remove(_userNameKey);
+    await _prefs.remove(_referralCodeKey);
   }
 
   // ============================================
   // USER INFO
   // ============================================
 
-  /// Get stored owner ID
-  String? getOwnerId() {
-    return _prefs.getString(_ownerIdKey);
+  /// Get stored user ID
+  String? getUserId() {
+    return _prefs.getString(_userIdKey);
   }
 
   /// Get stored user email
@@ -110,6 +147,11 @@ class KgitonAuthHelper {
   /// Get stored user name
   String? getUserName() {
     return _prefs.getString(_userNameKey);
+  }
+
+  /// Get stored referral code
+  String? getReferralCode() {
+    return _prefs.getString(_referralCodeKey);
   }
 
   // ============================================
@@ -127,10 +169,11 @@ class KgitonAuthHelper {
       final authData = await _apiService.auth.login(email: email, password: password);
 
       // Save tokens and user info
-      await _saveTokens(authData);
+      await _saveAuthData(authData);
 
-      // Inject token to API client for future requests
-      _apiService.client.setTokens(accessToken: authData.accessToken);
+      // Inject token and API key to API client for future requests
+      _apiService.setAccessToken(authData.accessToken);
+      _apiService.setApiKey(authData.user.apiKey);
 
       return {'success': true, 'message': 'Login berhasil', 'data': authData};
     } catch (e) {
@@ -138,31 +181,81 @@ class KgitonAuthHelper {
     }
   }
 
-  /// Register owner account
+  /// Register new user with license key
   ///
   /// Returns map with:
   /// - success: bool
   /// - message: String
   Future<Map<String, dynamic>> register({
-    required String name,
     required String email,
     required String password,
+    required String name,
     required String licenseKey,
-    required String entityType, // 'individual' or 'company'
+    String? referralCode,
   }) async {
     try {
-      await _apiService.auth.registerOwner(name: name, email: email, password: password, licenseKey: licenseKey, entityType: entityType);
+      final message = await _apiService.auth.register(
+        email: email,
+        password: password,
+        name: name,
+        licenseKey: licenseKey,
+        referralCode: referralCode,
+      );
 
-      return {'success': true, 'message': 'Registrasi berhasil. Silakan login.'};
+      return {'success': true, 'message': message};
     } catch (e) {
       return {'success': false, 'message': 'Registrasi gagal: ${e.toString()}'};
     }
   }
 
-  /// Logout (clear all stored data)
-  Future<void> logout() async {
-    await _clearTokens();
-    // Note: Tidak perlu call API logout karena token-based
+  /// Logout (clear all stored data and call API logout)
+  Future<Map<String, dynamic>> logout() async {
+    try {
+      // Call API logout to invalidate session
+      await _apiService.auth.logout();
+
+      // Clear local storage
+      await _clearTokens();
+
+      // Clear tokens from API client
+      _apiService.clearCredentials();
+
+      return {'success': true, 'message': 'Logout berhasil'};
+    } catch (e) {
+      // Still clear local storage even if API call fails
+      await _clearTokens();
+      _apiService.clearCredentials();
+
+      return {'success': true, 'message': 'Logout berhasil (offline)'};
+    }
+  }
+
+  /// Request password reset email
+  ///
+  /// Returns map with:
+  /// - success: bool
+  /// - message: String
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    try {
+      await _apiService.auth.forgotPassword(email: email);
+      return {'success': true, 'message': 'Email reset password telah dikirim'};
+    } catch (e) {
+      return {'success': false, 'message': 'Gagal mengirim email reset: ${e.toString()}'};
+    }
+  }
+
+  /// Reset password with token
+  ///
+  /// Returns map with:
+  /// - success: bool
+  /// - message: String
+  Future<Map<String, dynamic>> resetPassword({required String token, required String newPassword}) async {
+    try {
+      await _apiService.auth.resetPassword(token: token, newPassword: newPassword);
+      return {'success': true, 'message': 'Password berhasil direset'};
+    } catch (e) {
+      return {'success': false, 'message': 'Gagal reset password: ${e.toString()}'};
+    }
   }
 
   // ============================================
@@ -180,7 +273,19 @@ class KgitonAuthHelper {
       return null;
     }
 
-    _apiService.client.setTokens(accessToken: token);
+    // Check token expiration
+    final expiresAt = getTokenExpiresAt();
+    if (expiresAt != null && DateTime.now().isAfter(expiresAt)) {
+      return null;
+    }
+
+    _apiService.setAccessToken(token);
+
+    final apiKey = getApiKey();
+    if (apiKey != null) {
+      _apiService.setApiKey(apiKey);
+    }
+
     return _apiService;
   }
 
@@ -190,35 +295,85 @@ class KgitonAuthHelper {
   KgitonApiService getApiService() {
     final token = getToken();
     if (token != null && token.isNotEmpty) {
-      _apiService.client.setTokens(accessToken: token);
+      _apiService.setAccessToken(token);
     }
+
+    final apiKey = getApiKey();
+    if (apiKey != null) {
+      _apiService.setApiKey(apiKey);
+    }
+
     return _apiService;
   }
 
   // ============================================
-  // TOKEN REFRESH (if backend supports)
+  // API KEY MANAGEMENT
   // ============================================
 
-  /// Refresh access token using refresh token
+  /// Regenerate API key
   ///
-  /// Note: This depends on backend implementation
-  /// Returns new access token if successful
-  Future<String?> refreshAccessToken() async {
-    final refreshToken = getRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) {
-      return null;
-    }
-
+  /// Returns map with:
+  /// - success: bool
+  /// - message: String
+  /// - apiKey: String (if success)
+  Future<Map<String, dynamic>> regenerateApiKey() async {
     try {
-      // Note: Implement this if backend supports token refresh
-      // final newToken = await _apiService.auth.refreshToken(refreshToken);
-      // await _prefs.setString(_tokenKey, newToken);
-      // return newToken;
+      final newApiKey = await _apiService.user.regenerateApiKey();
 
-      // For now, return null (not implemented)
-      return null;
+      // Save new API key
+      await _prefs.setString(_apiKeyKey, newApiKey);
+
+      // Update API client
+      _apiService.setApiKey(newApiKey);
+
+      return {'success': true, 'message': 'API key berhasil diperbarui', 'apiKey': newApiKey};
     } catch (e) {
-      return null;
+      return {'success': false, 'message': 'Gagal regenerate API key: ${e.toString()}'};
     }
+  }
+
+  /// Revoke API key
+  ///
+  /// Returns map with:
+  /// - success: bool
+  /// - message: String
+  Future<Map<String, dynamic>> revokeApiKey() async {
+    try {
+      await _apiService.user.revokeApiKey();
+
+      // Remove API key from storage
+      await _prefs.remove(_apiKeyKey);
+
+      // Clear API key from client
+      _apiService.setApiKey(null);
+
+      return {'success': true, 'message': 'API key berhasil direvoke'};
+    } catch (e) {
+      return {'success': false, 'message': 'Gagal revoke API key: ${e.toString()}'};
+    }
+  }
+
+  // ============================================
+  // RESTORE SESSION
+  // ============================================
+
+  /// Restore session from stored tokens
+  ///
+  /// Call this on app startup to restore previous session
+  Future<bool> restoreSession() async {
+    final isLogged = await isLoggedIn();
+    if (!isLogged) {
+      return false;
+    }
+
+    final token = getToken();
+    final apiKey = getApiKey();
+
+    _apiService.setAccessToken(token);
+    if (apiKey != null) {
+      _apiService.setApiKey(apiKey);
+    }
+
+    return true;
   }
 }

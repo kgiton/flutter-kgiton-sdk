@@ -1,49 +1,52 @@
 import 'kgiton_api_client.dart';
 import 'services/auth_service.dart';
-import 'services/owner_service.dart';
-import 'services/transaction_service.dart';
-import 'services/cart_service.dart';
+import 'services/user_service.dart';
+import 'services/license_service.dart';
+import 'services/topup_service.dart';
+import 'services/license_transaction_service.dart';
 
 /// Main API Service for KGiTON SDK
 ///
 /// Provides centralized access to all API services:
-/// - Authentication
-/// - Owner Operations
-/// - Transaction Management
-/// - Shopping Cart
+/// - Authentication (login, register, password reset)
+/// - User (profile, token balance, use token)
+/// - License (validate license)
+/// - Top-up (purchase tokens)
+/// - License Transactions (purchase/subscription)
 ///
 /// Example usage:
 /// ```dart
-/// final apiService = KgitonApiService(baseUrl: 'http://localhost:3000');
+/// final apiService = KgitonApiService(baseUrl: 'https://api.kgiton.com');
 ///
 /// // Login
 /// final authData = await apiService.auth.login(
-///   email: 'owner@example.com',
+///   email: 'user@example.com',
 ///   password: 'password123',
 /// );
 ///
-/// // List items
-/// final items = await apiService.owner.listItems('LICENSE-KEY');
+/// // Get profile
+/// final profile = await apiService.user.getProfile();
 ///
-/// // Add to cart
-/// await apiService.cart.addItemToCart(
-///   AddCartRequest(
-///     licenseKey: 'LICENSE-KEY',
-///     itemId: 'item-uuid',
-///     quantity: 2.5,
-///   ),
+/// // Use token
+/// final result = await apiService.user.useToken('LICENSE-KEY-123');
+///
+/// // Top-up tokens
+/// final topup = await apiService.topup.requestTopup(
+///   tokenCount: 100,
+///   licenseKey: 'LICENSE-KEY-123',
 /// );
 /// ```
 class KgitonApiService {
   final KgitonApiClient _client;
 
   late final KgitonAuthService auth;
-  late final KgitonOwnerService owner;
-  late final KgitonTransactionService transaction;
-  late final KgitonCartService cart;
+  late final KgitonUserService user;
+  late final KgitonLicenseService license;
+  late final KgitonTopupService topup;
+  late final KgitonLicenseTransactionService licenseTransaction;
 
-  KgitonApiService({required String baseUrl, String? accessToken, String? refreshToken})
-    : _client = KgitonApiClient(baseUrl: baseUrl, accessToken: accessToken, refreshToken: refreshToken) {
+  KgitonApiService({required String baseUrl, String? accessToken, String? apiKey})
+    : _client = KgitonApiClient(baseUrl: baseUrl, accessToken: accessToken, apiKey: apiKey) {
     _initializeServices();
   }
 
@@ -54,9 +57,10 @@ class KgitonApiService {
 
   void _initializeServices() {
     auth = KgitonAuthService(_client);
-    owner = KgitonOwnerService(_client);
-    transaction = KgitonTransactionService(_client);
-    cart = KgitonCartService(_client);
+    user = KgitonUserService(_client);
+    license = KgitonLicenseService(_client);
+    topup = KgitonTopupService(_client);
+    licenseTransaction = KgitonLicenseTransactionService(_client);
   }
 
   /// Get the underlying API client
@@ -75,19 +79,14 @@ class KgitonApiService {
     _client.setAccessToken(token);
   }
 
-  /// Set refresh token
-  void setRefreshToken(String? token) {
-    _client.setRefreshToken(token);
+  /// Set API key
+  void setApiKey(String? key) {
+    _client.setApiKey(key);
   }
 
-  /// Set both tokens
-  void setTokens({String? accessToken, String? refreshToken}) {
-    _client.setTokens(accessToken: accessToken, refreshToken: refreshToken);
-  }
-
-  /// Clear all tokens
-  void clearTokens() {
-    _client.clearTokens();
+  /// Clear all credentials (tokens and API key)
+  void clearCredentials() {
+    _client.clearCredentials();
   }
 
   /// Save configuration to local storage

@@ -1,134 +1,116 @@
 /// User model
 class User {
   final String id;
+  final String name;
   final String email;
+  final String role;
+  final String apiKey;
+  final String? phoneNumber;
+  final String referralCode;
+  final String? referredBy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-  User({required this.id, required this.email});
+  User({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.apiKey,
+    this.phoneNumber,
+    required this.referralCode,
+    this.referredBy,
+    required this.createdAt,
+    required this.updatedAt,
+  });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    return User(id: (json['id'] as String?) ?? '', email: (json['email'] as String?) ?? '');
-  }
-
-  Map<String, dynamic> toJson() {
-    return {'id': id, 'email': email};
-  }
-}
-
-/// User profile model
-class UserProfile {
-  final String userId;
-  final String role;
-  final String entityType;
-  final String name;
-  final String? fullName;
-  final String? companyName;
-
-  UserProfile({required this.userId, required this.role, required this.entityType, required this.name, this.fullName, this.companyName});
-
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
-      userId: (json['user_id'] as String?) ?? '',
+    return User(
+      id: (json['id'] as String?) ?? '',
+      name: (json['name'] as String?) ?? '',
+      email: (json['email'] as String?) ?? '',
       role: (json['role'] as String?) ?? 'user',
-      entityType: (json['entity_type'] as String?) ?? 'individual',
-      name: (json['name'] as String?) ?? 'Unknown',
-      fullName: json['full_name'] as String?,
-      companyName: json['company_name'] as String?,
+      apiKey: (json['api_key'] as String?) ?? '',
+      phoneNumber: json['phone_number'] as String?,
+      referralCode: (json['referral_code'] as String?) ?? '',
+      referredBy: json['referred_by'] as String?,
+      createdAt: DateTime.parse((json['created_at'] as String?) ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse((json['updated_at'] as String?) ?? DateTime.now().toIso8601String()),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'user_id': userId,
-      'role': role,
-      'entity_type': entityType,
+      'id': id,
       'name': name,
-      if (fullName != null) 'full_name': fullName,
-      if (companyName != null) 'company_name': companyName,
+      'email': email,
+      'role': role,
+      'api_key': apiKey,
+      if (phoneNumber != null) 'phone_number': phoneNumber,
+      'referral_code': referralCode,
+      if (referredBy != null) 'referred_by': referredBy,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
+
+  /// Check if user is super admin
+  bool get isSuperAdmin => role == 'super_admin';
 }
 
-/// Auth response data
+/// Session model
+class Session {
+  final String accessToken;
+  final int expiresAt;
+
+  Session({required this.accessToken, required this.expiresAt});
+
+  factory Session.fromJson(Map<String, dynamic> json) {
+    return Session(accessToken: (json['access_token'] as String?) ?? '', expiresAt: (json['expires_at'] as int?) ?? 0);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'access_token': accessToken, 'expires_at': expiresAt};
+  }
+
+  /// Check if session is expired
+  bool get isExpired {
+    final expiryTime = DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000);
+    return DateTime.now().isAfter(expiryTime);
+  }
+}
+
+/// Auth response data (login response)
 class AuthData {
   final User user;
-  final UserProfile profile;
-  final String accessToken;
-  final String? refreshToken;
+  final Session session;
 
-  AuthData({required this.user, required this.profile, required this.accessToken, this.refreshToken});
+  AuthData({required this.user, required this.session});
 
   factory AuthData.fromJson(Map<String, dynamic> json) {
-    return AuthData(
-      user: User.fromJson(json['user'] as Map<String, dynamic>),
-      profile: UserProfile.fromJson(json['profile'] as Map<String, dynamic>),
-      accessToken: json['access_token'] as String,
-      refreshToken: json['refresh_token'] as String?,
-    );
+    return AuthData(user: User.fromJson(json['user'] as Map<String, dynamic>), session: Session.fromJson(json['session'] as Map<String, dynamic>));
   }
 
   Map<String, dynamic> toJson() {
-    return {'user': user.toJson(), 'profile': profile.toJson(), 'access_token': accessToken, if (refreshToken != null) 'refresh_token': refreshToken};
+    return {'user': user.toJson(), 'session': session.toJson()};
   }
+
+  /// Get access token from session
+  String get accessToken => session.accessToken;
 }
 
-/// Current user data
-class CurrentUserData {
-  final User user;
-  final UserProfile profile;
-
-  CurrentUserData({required this.user, required this.profile});
-
-  factory CurrentUserData.fromJson(dynamic json) {
-    if (json is! Map<String, dynamic>) {
-      throw FormatException('Invalid CurrentUserData format: expected Map, got ${json.runtimeType}');
-    }
-
-    // Check if response has nested 'user' and 'profile' keys
-    if (json.containsKey('user') && json.containsKey('profile')) {
-      return CurrentUserData(
-        user: User.fromJson(json['user'] as Map<String, dynamic>),
-        profile: UserProfile.fromJson(json['profile'] as Map<String, dynamic>),
-      );
-    }
-
-    // Handle flat structure where user and profile data are mixed
-    // Try to extract user fields (id, email)
-    if (json.containsKey('id') && json.containsKey('email')) {
-      final user = User(id: (json['id'] as String?) ?? '', email: (json['email'] as String?) ?? '');
-
-      // Extract profile fields with safe defaults
-      final profile = UserProfile(
-        userId: (json['user_id'] as String?) ?? (json['id'] as String?) ?? '',
-        role: (json['role'] as String?) ?? 'user',
-        entityType: (json['entity_type'] as String?) ?? 'individual',
-        name: (json['name'] as String?) ?? 'Unknown',
-        fullName: json['full_name'] as String?,
-        companyName: json['company_name'] as String?,
-      );
-
-      return CurrentUserData(user: user, profile: profile);
-    }
-
-    throw FormatException('Invalid CurrentUserData format: missing required fields');
-  }
-
-  Map<String, dynamic> toJson() {
-    return {'user': user.toJson(), 'profile': profile.toJson()};
-  }
-}
-
-/// Register owner request
-class RegisterOwnerRequest {
+/// Register request
+class RegisterRequest {
   final String email;
   final String password;
-  final String licenseKey;
-  final String entityType;
   final String name;
+  final String licenseKey;
+  final String? referralCode;
 
-  RegisterOwnerRequest({required this.email, required this.password, required this.licenseKey, required this.entityType, required this.name});
+  RegisterRequest({required this.email, required this.password, required this.name, required this.licenseKey, this.referralCode});
 
   Map<String, dynamic> toJson() {
-    return {'email': email, 'password': password, 'license_key': licenseKey, 'entity_type': entityType, 'name': name};
+    return {'email': email, 'password': password, 'name': name, 'license_key': licenseKey, if (referralCode != null) 'referral_code': referralCode};
   }
 }
 
@@ -164,17 +146,5 @@ class ResetPasswordRequest {
 
   Map<String, dynamic> toJson() {
     return {'token': token, 'new_password': newPassword};
-  }
-}
-
-/// Change password request
-class ChangePasswordRequest {
-  final String oldPassword;
-  final String newPassword;
-
-  ChangePasswordRequest({required this.oldPassword, required this.newPassword});
-
-  Map<String, dynamic> toJson() {
-    return {'old_password': oldPassword, 'new_password': newPassword};
   }
 }

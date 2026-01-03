@@ -115,3 +115,6 @@ secrets/
 
 # Web
 **/web/.dart_tool/
+
+# Examples
+example/

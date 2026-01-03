@@ -3,6 +3,40 @@
 /// Flutter SDK untuk integrasi timbangan berbasis ESP32 via BLE.
 /// Mendukung autentikasi license key, kontrol buzzer, dan streaming data berat realtime.
 /// Juga menyediakan API client untuk berkomunikasi dengan backend KGiTON.
+///
+/// # Features
+/// - BLE connection to KGiTON Scale devices
+/// - Real-time weight streaming
+/// - License key validation and management
+/// - Token-based usage system
+/// - Top-up tokens via various payment methods
+///
+/// # Usage
+/// ```dart
+/// import 'package:kgiton_sdk/kgiton_sdk.dart';
+///
+/// // Initialize API service
+/// final api = KgitonApiService(baseUrl: 'https://api.kgiton.com');
+///
+/// // Login
+/// final authData = await api.auth.login(
+///   email: 'user@example.com',
+///   password: 'password',
+/// );
+///
+/// // Get token balance
+/// final balance = await api.user.getTokenBalance();
+///
+/// // Use token for weighing session
+/// final result = await api.user.useToken('LICENSE-KEY');
+///
+/// // Connect to BLE scale
+/// final scale = KgitonScaleService();
+/// await scale.connect('LICENSE-KEY');
+/// scale.weightStream.listen((weight) {
+///   print('Weight: ${weight.value} ${weight.unit}');
+/// });
+/// ```
 library kgiton_sdk;
 
 // ==================== BLE Services ====================
@@ -34,17 +68,17 @@ export 'src/api/api_constants.dart';
 
 // API Services
 export 'src/api/services/auth_service.dart';
-export 'src/api/services/owner_service.dart';
-export 'src/api/services/cart_service.dart';
-export 'src/api/services/transaction_service.dart';
+export 'src/api/services/user_service.dart';
+export 'src/api/services/license_service.dart';
+export 'src/api/services/topup_service.dart';
+export 'src/api/services/license_transaction_service.dart';
 
 // API Models
 export 'src/api/models/api_response.dart';
 export 'src/api/models/auth_models.dart';
 export 'src/api/models/license_models.dart';
-export 'src/api/models/item_models.dart';
-export 'src/api/models/cart_models.dart';
-export 'src/api/models/transaction_models.dart';
+export 'src/api/models/topup_models.dart';
+export 'src/api/models/license_transaction_models.dart';
 
 // API Exceptions
 export 'src/api/exceptions/api_exceptions.dart';
@@ -52,5 +86,5 @@ export 'src/api/exceptions/api_exceptions.dart';
 // ==================== Helpers ====================
 // Simplified helpers for common operations
 export 'src/helpers/kgiton_auth_helper.dart';
-export 'src/helpers/kgiton_cart_helper.dart';
 export 'src/helpers/kgiton_license_helper.dart';
+export 'src/helpers/kgiton_topup_helper.dart';

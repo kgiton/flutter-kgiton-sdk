@@ -170,4 +170,4 @@ Contact: support@kgiton.com
 
 ---
 
-© 2025 PT KGiTON. All Rights Reserved.
+© 2026 PT KGiTON. All Rights Reserved.

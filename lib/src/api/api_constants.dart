@@ -11,19 +11,20 @@ library;
 class KgitonApiConfig {
   /// Default base URL (can be overridden during initialization)
   /// 🔧 CHANGE THIS: Update this URL when API endpoint changes
-  static const String defaultBaseUrl = 'https://api.example.com';
+  static const String defaultBaseUrl = 'https://api.kgiton.com';
 
   /// API version prefix
-  /// 🔧 CHANGE THIS: Update version prefix if API versioning changes (e.g., /api/v2)
-  static const String apiVersion = '/api/v1';
+  /// 🔧 CHANGE THIS: Update version prefix if API versioning changes
+  static const String apiVersion = '/api';
 
   /// Request timeout duration
-  static const Duration requestTimeout = Duration(seconds: 10);
+  static const Duration requestTimeout = Duration(seconds: 30);
 
   /// Storage keys for SharedPreferences
   static const String baseUrlStorageKey = 'kgiton_api_base_url';
   static const String accessTokenStorageKey = 'kgiton_access_token';
   static const String refreshTokenStorageKey = 'kgiton_refresh_token';
+  static const String apiKeyStorageKey = 'kgiton_api_key';
 }
 
 /// API Endpoint Paths
@@ -33,141 +34,213 @@ class KgitonApiEndpoints {
   // AUTHENTICATION ENDPOINTS
   // ============================================================================
 
-  /// Register new owner account
-  /// POST /v1/auth/register-owner
-  static const String registerOwner = '/auth/register-owner';
+  /// Register new user account with license key
+  /// POST /api/auth/register
+  static const String register = '/auth/register';
 
-  /// Login for owner
-  /// POST /v1/auth/login
+  /// Verify email after registration
+  /// GET /api/auth/verify-email?token={token}
+  static const String verifyEmail = '/auth/verify-email';
+
+  /// Login for user
+  /// POST /api/auth/login
   static const String login = '/auth/login';
 
-  /// Get current authenticated user
-  /// GET /v1/auth/me
-  static const String getCurrentUser = '/auth/me';
-
   /// Logout current user
-  /// POST /v1/auth/logout
+  /// POST /api/auth/logout
   static const String logout = '/auth/logout';
 
   /// Forgot password - send reset link via email
-  /// POST /v1/auth/forgot-password
+  /// POST /api/auth/forgot-password
   static const String forgotPassword = '/auth/forgot-password';
 
   /// Reset password with token
-  /// POST /v1/auth/reset-password
+  /// POST /api/auth/reset-password
   static const String resetPassword = '/auth/reset-password';
 
-  /// Change password (authenticated users)
-  /// POST /v1/auth/change-password
-  static const String changePassword = '/auth/change-password';
-
   // ============================================================================
-  // OWNER OPERATIONS ENDPOINTS
+  // USER ENDPOINTS
   // ============================================================================
 
-  /// List owner's own licenses
-  /// GET /v1/owner/licenses
-  static const String listOwnerLicenses = '/owner/licenses';
+  /// Get user profile with all license keys
+  /// GET /api/user/profile
+  static const String userProfile = '/user/profile';
 
-  /// Assign additional license to owner
-  /// POST /v1/owner/licenses/assign
-  static const String assignAdditionalLicense = '/owner/licenses/assign';
+  /// Get user's token balance from all license keys
+  /// GET /api/user/token-balance
+  static const String tokenBalance = '/user/token-balance';
 
-  // ============================================================================
-  // ITEMS/PRODUCTS ENDPOINTS (Owner)
-  // ============================================================================
+  /// Use 1 token from license key
+  /// POST /api/user/license-keys/{licenseKey}/use-token
+  static String useToken(String licenseKey) => '/user/license-keys/$licenseKey/use-token';
 
-  /// Create new item
-  /// POST /v1/items
-  static const String createItem = '/items';
+  /// Assign additional license key to user
+  /// POST /api/user/assign-license
+  static const String assignLicense = '/user/assign-license';
 
-  /// List all items with pagination
-  /// GET /v1/items?page={page}&limit={limit}
-  static const String listItems = '/items';
+  /// Regenerate API key
+  /// POST /api/user/regenerate-api-key
+  static const String regenerateApiKey = '/user/regenerate-api-key';
 
-  /// Get item by ID
-  /// GET /v1/items/:id
-  static String getItemById(String id) => '/items/$id';
-
-  /// Update item
-  /// PUT /v1/items/:id
-  static String updateItem(String id) => '/items/$id';
-
-  /// Permanently delete single item (cannot be undone)
-  /// DELETE /v1/items/:id
-  static String deleteItem(String id) => '/items/$id';
-
-  /// Permanently delete all items (cannot be undone)
-  /// DELETE /v1/items
-  static const String deleteAllItems = '/items';
+  /// Revoke API key
+  /// POST /api/user/revoke-api-key
+  static const String revokeApiKey = '/user/revoke-api-key';
 
   // ============================================================================
-  // TRANSACTION ENDPOINTS (Owner)
+  // LICENSE ENDPOINTS (Public)
   // ============================================================================
 
-  /// List all transactions with pagination and filters
-  /// GET /v1/transactions?page={page}&limit={limit}&status={status}&start_date={start}&end_date={end}
-  static const String listTransactions = '/transactions';
-
-  /// Get transaction by ID
-  /// GET /v1/transactions/:id
-  static String getTransactionById(String id) => '/transactions/$id';
-
-  /// Get transaction statistics
-  /// GET /v1/transactions/stats?start_date={start}&end_date={end}
-  static const String getTransactionStats = '/transactions/stats';
-
-  /// Cancel transaction
-  /// POST /v1/transactions/:id/cancel
-  static String cancelTransaction(String id) => '/transactions/$id/cancel';
-
-  /// Xendit payment callback
-  /// POST /v1/transactions/callback
-  static const String paymentCallback = '/transactions/callback';
+  /// Validate license key (public endpoint)
+  /// POST /api/licenses/validate
+  static const String validateLicense = '/licenses/validate';
 
   // ============================================================================
-  // CART ENDPOINTS (Owner)
+  // TOP-UP ENDPOINTS
   // ============================================================================
 
-  /// Add item to cart (ALWAYS creates new entry)
-  /// POST /v1/cart
-  static const String addToCart = '/cart';
+  /// Get available payment methods
+  /// GET /api/topup/payment-methods
+  static const String paymentMethods = '/topup/payment-methods';
 
-  /// Get all cart items by cart ID (session-based)
-  /// GET /v1/cart/:cartId
-  static String getCartByCartId(String cartId) => '/cart/$cartId';
+  /// Request top-up token balance
+  /// POST /api/topup/request
+  static const String topupRequest = '/topup/request';
 
-  /// Get cart summary with total amount (from stored prices)
-  /// GET /v1/cart/:cartId/summary
-  static String getCartSummary(String cartId) => '/cart/$cartId/summary';
+  /// Check transaction status (public)
+  /// GET /api/topup/check/{transaction_id}
+  static String checkTransactionPublic(String transactionId) => '/topup/check/$transactionId';
 
-  /// Get single cart item by ID
-  /// GET /v1/cart/item/:id
-  static String getCartItem(String id) => '/cart/item/$id';
+  /// Check transaction status (authenticated)
+  /// GET /api/topup/status/{transaction_id}
+  static String checkTransactionStatus(String transactionId) => '/topup/status/$transactionId';
 
-  /// Update cart item
-  /// PUT /v1/cart/:id
-  static String updateCartItem(String id) => '/cart/$id';
+  /// Get transaction history
+  /// GET /api/topup/history
+  static const String topupHistory = '/topup/history';
 
-  /// Delete single cart item
-  /// DELETE /v1/cart/:id
-  static String deleteCartItem(String id) => '/cart/$id';
+  /// Cancel pending transaction
+  /// POST /api/topup/cancel/{transaction_id}
+  static String cancelTransaction(String transactionId) => '/topup/cancel/$transactionId';
 
-  /// Delete all cart items by cart ID (clear cart for session)
-  /// DELETE /v1/cart/:cartId/clear
-  static String deleteCartByCartId(String cartId) => '/cart/$cartId/clear';
+  // ============================================================================
+  // LICENSE TRANSACTION ENDPOINTS (User)
+  // ============================================================================
 
-  /// Checkout cart to create transaction
-  /// POST /v1/cart/:cartId/checkout
-  static String checkoutCart(String cartId) => '/cart/$cartId/checkout';
+  /// Get logged-in user's license transactions
+  /// GET /api/license-transactions/my
+  static const String myLicenseTransactions = '/license-transactions/my';
 
-  /// Get all cart items by license key (NEW endpoint for multi-branch support)
-  /// GET /v1/cart/license/:licenseKey
-  static String getCartByLicenseKey(String licenseKey) => '/cart/license/$licenseKey';
+  /// Get logged-in user's licenses with device and payment info
+  /// GET /api/license-transactions/my-licenses
+  static const String myLicenses = '/license-transactions/my-licenses';
 
-  /// Clear all cart items by license key (NEW endpoint for multi-branch support)
-  /// DELETE /v1/cart/license/:licenseKey
-  static String deleteCartByLicenseKey(String licenseKey) => '/cart/license/$licenseKey';
+  /// Initiate license purchase payment (for buy type)
+  /// POST /api/license-transactions/purchase
+  static const String initiatePurchase = '/license-transactions/purchase';
+
+  /// Initiate license subscription payment (for rent type)
+  /// POST /api/license-transactions/subscription
+  static const String initiateSubscription = '/license-transactions/subscription';
+
+  // ============================================================================
+  // ADMIN LICENSE ENDPOINTS (Super Admin only)
+  // ============================================================================
+
+  /// Create license key
+  /// POST /api/admin/license-keys
+  static const String createLicenseKey = '/admin/license-keys';
+
+  /// Bulk create license keys
+  /// POST /api/admin/license-keys/bulk
+  static const String bulkCreateLicenseKeys = '/admin/license-keys/bulk';
+
+  /// Upload licenses from CSV
+  /// POST /api/admin/license-keys/bulk-upload
+  static const String bulkUploadLicenses = '/admin/license-keys/bulk-upload';
+
+  /// Get all license keys
+  /// GET /api/admin/license-keys
+  static const String getAllLicenseKeys = '/admin/license-keys';
+
+  /// Get all licenses with devices
+  /// GET /api/admin/license-keys/with-devices
+  static const String getAllLicensesWithDevices = '/admin/license-keys/with-devices';
+
+  /// Get license key by ID
+  /// GET /api/admin/license-keys/{id}
+  static String getLicenseKeyById(String id) => '/admin/license-keys/$id';
+
+  /// Update license key by ID
+  /// PUT /api/admin/license-keys/{id}
+  static String updateLicenseKeyById(String id) => '/admin/license-keys/$id';
+
+  /// Delete license key by ID
+  /// DELETE /api/admin/license-keys/{id}
+  static String deleteLicenseKeyById(String id) => '/admin/license-keys/$id';
+
+  /// Get license key by key string
+  /// GET /api/admin/license-keys/key/{key}
+  static String getLicenseKeyByKey(String key) => '/admin/license-keys/key/$key';
+
+  /// Update license key by key string
+  /// PUT /api/admin/license-keys/key/{key}
+  static String updateLicenseKeyByKey(String key) => '/admin/license-keys/key/$key';
+
+  /// Delete license key by key string
+  /// DELETE /api/admin/license-keys/key/{key}
+  static String deleteLicenseKeyByKey(String key) => '/admin/license-keys/key/$key';
+
+  /// Set trial mode for license key
+  /// POST /api/admin/license-keys/{id}/trial
+  static String setTrialMode(String id) => '/admin/license-keys/$id/trial';
+
+  /// Add token balance to license key
+  /// POST /api/admin/license-keys/{id}/add-tokens
+  static String addTokenBalance(String id) => '/admin/license-keys/$id/add-tokens';
+
+  /// Unassign license key from user
+  /// POST /api/admin/license-keys/{id}/unassign
+  static String unassignLicenseKey(String id) => '/admin/license-keys/$id/unassign';
+
+  /// Confirm cash payment for license
+  /// POST /api/admin/license-keys/{id}/confirm-payment
+  static String confirmCashPayment(String id) => '/admin/license-keys/$id/confirm-payment';
+
+  /// Initiate payment for license (admin)
+  /// POST /api/admin/license-keys/{id}/initiate-payment
+  static String initiatePayment(String id) => '/admin/license-keys/$id/initiate-payment';
+
+  /// Renew subscription for license
+  /// POST /api/admin/license-keys/{id}/renew
+  static String renewSubscription(String id) => '/admin/license-keys/$id/renew';
+
+  // ============================================================================
+  // ADMIN TOP-UP ENDPOINTS (Super Admin only)
+  // ============================================================================
+
+  /// Get all transactions (admin)
+  /// GET /api/topup/admin/all
+  static const String getAllTransactions = '/topup/admin/all';
+
+  // ============================================================================
+  // ADMIN LICENSE TRANSACTION ENDPOINTS (Super Admin only)
+  // ============================================================================
+
+  /// Get all license transactions
+  /// GET /api/license-transactions/admin
+  static const String adminAllLicenseTransactions = '/license-transactions/admin';
+
+  /// Get license status summary
+  /// GET /api/license-transactions/admin/summary
+  static const String adminLicenseStatusSummary = '/license-transactions/admin/summary';
+
+  /// Get license transaction by ID
+  /// GET /api/license-transactions/admin/{id}
+  static String adminGetLicenseTransactionById(String id) => '/license-transactions/admin/$id';
+
+  /// Get transactions by license key
+  /// GET /api/license-transactions/admin/license/{licenseKey}
+  static String adminGetTransactionsByLicenseKey(String licenseKey) => '/license-transactions/admin/license/$licenseKey';
 }
 
 /// HTTP Status Codes
@@ -203,30 +276,81 @@ class PaginationDefaults {
   static const int maxLimit = 100;
 }
 
-/// License status values
-class LicenseStatus {
-  static const String available = 'available';
-  static const String assigned = 'assigned';
-  static const String expired = 'expired';
-  static const String revoked = 'revoked';
-}
-
-/// Transaction status values
-class TransactionStatus {
-  static const String pending = 'pending';
-  static const String paid = 'paid';
-  static const String cancelled = 'cancelled';
-  static const String expired = 'expired';
-  static const String refunded = 'refunded';
-}
-
-/// Entity type values
-class EntityType {
-  static const String individual = 'individual';
-  static const String company = 'company';
-}
-
 /// User role values
 class UserRole {
-  static const String owner = 'owner';
+  static const String superAdmin = 'super_admin';
+  static const String user = 'user';
+}
+
+/// License status values
+class LicenseStatus {
+  static const String active = 'active';
+  static const String inactive = 'inactive';
+  static const String trial = 'trial';
+}
+
+/// License purchase type values
+class LicensePurchaseType {
+  static const String buy = 'buy';
+  static const String rent = 'rent';
+}
+
+/// License transaction status values
+class LicenseTransactionStatus {
+  static const String pending = 'pending';
+  static const String paid = 'paid';
+  static const String active = 'active';
+  static const String expired = 'expired';
+  static const String cancelled = 'cancelled';
+}
+
+/// Transaction status values (for top-up)
+class TransactionStatus {
+  static const String success = 'success';
+  static const String failed = 'failed';
+  static const String pending = 'pending';
+  static const String expired = 'expired';
+  static const String cancelled = 'cancelled';
+}
+
+/// Payment method values
+class PaymentMethod {
+  /// Winpay Checkout Page (all payment methods in one page)
+  static const String checkoutPage = 'checkout_page';
+
+  /// Virtual Account Banks
+  static const String vaBri = 'va_bri';
+  static const String vaBni = 'va_bni';
+  static const String vaBca = 'va_bca';
+  static const String vaMandiri = 'va_mandiri';
+  static const String vaPermata = 'va_permata';
+  static const String vaBsi = 'va_bsi';
+  static const String vaCimb = 'va_cimb';
+  static const String vaSinarmas = 'va_sinarmas';
+  static const String vaMuamalat = 'va_muamalat';
+  static const String vaIndomaret = 'va_indomaret';
+  static const String vaAlfamart = 'va_alfamart';
+
+  /// QRIS payment
+  static const String qris = 'qris';
+
+  /// List of all payment methods
+  static const List<String> allMethods = [
+    checkoutPage,
+    vaBri,
+    vaBni,
+    vaBca,
+    vaMandiri,
+    vaPermata,
+    vaBsi,
+    vaCimb,
+    vaSinarmas,
+    vaMuamalat,
+    vaIndomaret,
+    vaAlfamart,
+    qris,
+  ];
+
+  /// List of VA payment methods
+  static const List<String> vaMethods = [vaBri, vaBni, vaBca, vaMandiri, vaPermata, vaBsi, vaCimb, vaSinarmas, vaMuamalat, vaIndomaret, vaAlfamart];
 }

@@ -10,12 +10,14 @@ class KgitonApiClient {
   String _baseUrl;
   String? _accessToken;
   String? _refreshToken;
+  String? _apiKey;
   final http.Client _httpClient;
 
-  KgitonApiClient({String? baseUrl, String? accessToken, String? refreshToken, http.Client? httpClient})
+  KgitonApiClient({String? baseUrl, String? accessToken, String? refreshToken, String? apiKey, http.Client? httpClient})
     : _baseUrl = baseUrl ?? KgitonApiConfig.defaultBaseUrl,
       _accessToken = accessToken,
       _refreshToken = refreshToken,
+      _apiKey = apiKey,
       _httpClient = httpClient ?? http.Client();
 
   /// Get base URL
@@ -26,6 +28,9 @@ class KgitonApiClient {
 
   /// Get refresh token
   String? get refreshToken => _refreshToken;
+
+  /// Get API key
+  String? get apiKey => _apiKey;
 
   /// Set base URL
   void setBaseUrl(String url) {
@@ -42,16 +47,28 @@ class KgitonApiClient {
     _refreshToken = token;
   }
 
+  /// Set API key
+  void setApiKey(String? key) {
+    _apiKey = key;
+  }
+
   /// Set both tokens
   void setTokens({String? accessToken, String? refreshToken}) {
     _accessToken = accessToken;
     _refreshToken = refreshToken;
   }
 
-  /// Clear all tokens
+  /// Clear all tokens and API key
   void clearTokens() {
     _accessToken = null;
     _refreshToken = null;
+  }
+
+  /// Clear all credentials (tokens and API key)
+  void clearCredentials() {
+    _accessToken = null;
+    _refreshToken = null;
+    _apiKey = null;
   }
 
   /// Check if access token exists
@@ -62,6 +79,11 @@ class KgitonApiClient {
   /// Check if refresh token exists
   bool hasRefreshToken() {
     return _refreshToken != null && _refreshToken!.isNotEmpty;
+  }
+
+  /// Check if API key exists
+  bool hasApiKey() {
+    return _apiKey != null && _apiKey!.isNotEmpty;
   }
 
   /// Save configuration to local storage
@@ -78,6 +100,11 @@ class KgitonApiClient {
     } else {
       await prefs.remove(KgitonApiConfig.refreshTokenStorageKey);
     }
+    if (_apiKey != null) {
+      await prefs.setString(KgitonApiConfig.apiKeyStorageKey, _apiKey!);
+    } else {
+      await prefs.remove(KgitonApiConfig.apiKeyStorageKey);
+    }
   }
 
   /// Load configuration from local storage
@@ -86,6 +113,7 @@ class KgitonApiClient {
     _baseUrl = prefs.getString(KgitonApiConfig.baseUrlStorageKey) ?? _baseUrl;
     _accessToken = prefs.getString(KgitonApiConfig.accessTokenStorageKey);
     _refreshToken = prefs.getString(KgitonApiConfig.refreshTokenStorageKey);
+    _apiKey = prefs.getString(KgitonApiConfig.apiKeyStorageKey);
   }
 
   /// Clear saved configuration
@@ -93,15 +121,26 @@ class KgitonApiClient {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(KgitonApiConfig.accessTokenStorageKey);
     await prefs.remove(KgitonApiConfig.refreshTokenStorageKey);
-    clearTokens();
+    await prefs.remove(KgitonApiConfig.apiKeyStorageKey);
+    clearCredentials();
   }
 
   /// Get default headers
-  Map<String, String> _getHeaders({bool requiresAuth = false}) {
+  /// [requiresAuth] - If true, adds Bearer token or API key
+  /// [useApiKey] - If true and API key exists, use API key instead of Bearer token
+  Map<String, String> _getHeaders({bool requiresAuth = false, bool useApiKey = false}) {
     final headers = <String, String>{'Content-Type': 'application/json', 'Accept': 'application/json'};
 
-    if (requiresAuth && _accessToken != null) {
-      headers['Authorization'] = 'Bearer $_accessToken';
+    if (requiresAuth) {
+      // Prefer API key if specified and available
+      if (useApiKey && _apiKey != null) {
+        headers['X-API-Key'] = _apiKey!;
+      } else if (_accessToken != null) {
+        headers['Authorization'] = 'Bearer $_accessToken';
+      } else if (_apiKey != null) {
+        // Fallback to API key if no access token
+        headers['X-API-Key'] = _apiKey!;
+      }
     }
 
     return headers;
@@ -130,17 +169,15 @@ class KgitonApiClient {
     }
 
     // Handle error responses
-    // Try to parse JSON error response, but handle non-JSON responses gracefully
     Map<String, dynamic>? jsonBody;
     String errorMessage = 'Unknown error';
     dynamic errorDetails;
 
     try {
       jsonBody = json.decode(response.body) as Map<String, dynamic>;
-      errorMessage = jsonBody['message'] as String? ?? 'Unknown error';
+      errorMessage = jsonBody['message'] as String? ?? jsonBody['error'] as String? ?? 'Unknown error';
       errorDetails = jsonBody['details'];
     } catch (e) {
-      // If JSON parsing fails, use response body as error message (truncate if too long)
       final bodyPreview = response.body.length > 200 ? '${response.body.substring(0, 200)}...' : response.body;
       errorMessage = 'Server returned non-JSON response: $bodyPreview';
     }
@@ -187,6 +224,7 @@ class KgitonApiClient {
     String endpoint, {
     Map<String, String>? queryParameters,
     bool requiresAuth = false,
+    bool useApiKey = false,
     T Function(dynamic)? fromJsonT,
   }) async {
     try {
@@ -195,7 +233,12 @@ class KgitonApiClient {
         uri = uri.replace(queryParameters: queryParameters);
       }
 
-      final response = await _httpClient.get(uri, headers: _getHeaders(requiresAuth: requiresAuth)).timeout(KgitonApiConfig.requestTimeout);
+      final response = await _httpClient
+          .get(
+            uri,
+            headers: _getHeaders(requiresAuth: requiresAuth, useApiKey: useApiKey),
+          )
+          .timeout(KgitonApiConfig.requestTimeout);
 
       return _handleResponse<T>(response, fromJsonT);
     } catch (e) {
@@ -205,14 +248,20 @@ class KgitonApiClient {
   }
 
   /// POST request
-  Future<ApiResponse<T>> post<T>(String endpoint, {Map<String, dynamic>? body, bool requiresAuth = false, T Function(dynamic)? fromJsonT}) async {
+  Future<ApiResponse<T>> post<T>(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    bool requiresAuth = false,
+    bool useApiKey = false,
+    T Function(dynamic)? fromJsonT,
+  }) async {
     try {
       final uri = Uri.parse(_buildUrl(endpoint));
 
       final response = await _httpClient
           .post(
             uri,
-            headers: _getHeaders(requiresAuth: requiresAuth),
+            headers: _getHeaders(requiresAuth: requiresAuth, useApiKey: useApiKey),
             body: body != null ? json.encode(body) : null,
           )
           .timeout(KgitonApiConfig.requestTimeout);
@@ -225,14 +274,20 @@ class KgitonApiClient {
   }
 
   /// PUT request
-  Future<ApiResponse<T>> put<T>(String endpoint, {Map<String, dynamic>? body, bool requiresAuth = false, T Function(dynamic)? fromJsonT}) async {
+  Future<ApiResponse<T>> put<T>(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    bool requiresAuth = false,
+    bool useApiKey = false,
+    T Function(dynamic)? fromJsonT,
+  }) async {
     try {
       final uri = Uri.parse(_buildUrl(endpoint));
 
       final response = await _httpClient
           .put(
             uri,
-            headers: _getHeaders(requiresAuth: requiresAuth),
+            headers: _getHeaders(requiresAuth: requiresAuth, useApiKey: useApiKey),
             body: body != null ? json.encode(body) : null,
           )
           .timeout(KgitonApiConfig.requestTimeout);
@@ -245,14 +300,20 @@ class KgitonApiClient {
   }
 
   /// DELETE request
-  Future<ApiResponse<T>> delete<T>(String endpoint, {Map<String, dynamic>? body, bool requiresAuth = false, T Function(dynamic)? fromJsonT}) async {
+  Future<ApiResponse<T>> delete<T>(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    bool requiresAuth = false,
+    bool useApiKey = false,
+    T Function(dynamic)? fromJsonT,
+  }) async {
     try {
       final uri = Uri.parse(_buildUrl(endpoint));
 
       final response = await _httpClient
           .delete(
             uri,
-            headers: _getHeaders(requiresAuth: requiresAuth),
+            headers: _getHeaders(requiresAuth: requiresAuth, useApiKey: useApiKey),
             body: body != null ? json.encode(body) : null,
           )
           .timeout(KgitonApiConfig.requestTimeout);
@@ -271,6 +332,7 @@ class KgitonApiClient {
     required String fileFieldName,
     required String filePath,
     bool requiresAuth = false,
+    bool useApiKey = false,
     T Function(dynamic)? fromJsonT,
   }) async {
     try {
@@ -278,7 +340,7 @@ class KgitonApiClient {
       final request = http.MultipartRequest('POST', uri);
 
       // Add headers
-      final headers = _getHeaders(requiresAuth: requiresAuth);
+      final headers = _getHeaders(requiresAuth: requiresAuth, useApiKey: useApiKey);
       headers.remove('Content-Type'); // Let multipart set its own content type
       request.headers.addAll(headers);
 
