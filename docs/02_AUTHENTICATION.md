@@ -23,7 +23,7 @@ Untuk mendaftar, pengguna harus memiliki license key yang valid.
 import 'package:kgiton_sdk/kgiton_sdk.dart';
 
 Future<void> registerUser() async {
-  final api = KgitonApiService(baseUrl: 'https://api.kgiton.com');
+  final api = KgitonApiService(baseUrl: 'https://api.example.com');
   
   try {
     final authData = await api.auth.register(
@@ -88,7 +88,7 @@ Future<void> registerWithHelper() async {
 
 ```dart
 Future<void> loginUser() async {
-  final api = KgitonApiService(baseUrl: 'https://api.kgiton.com');
+  final api = KgitonApiService(baseUrl: 'https://api.example.com');
   
   try {
     final authData = await api.auth.login(
@@ -115,7 +115,7 @@ Future<void> loginUser() async {
 ```dart
 Future<void> loginWithHelper() async {
   final prefs = await SharedPreferences.getInstance();
-  final auth = KgitonAuthHelper(prefs, baseUrl: 'https://api.kgiton.com');
+  final auth = KgitonAuthHelper(prefs, baseUrl: 'https://api.example.com');
   
   final result = await auth.login('user@example.com', 'SecurePassword123!');
   
@@ -186,7 +186,7 @@ Panggil ini saat app startup untuk restore session sebelumnya:
 ```dart
 Future<void> restoreSession() async {
   final prefs = await SharedPreferences.getInstance();
-  final auth = KgitonAuthHelper(prefs, baseUrl: 'https://api.kgiton.com');
+  final auth = KgitonAuthHelper(prefs, baseUrl: 'https://api.example.com');
   
   final restored = await auth.restoreSession();
   

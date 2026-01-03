@@ -184,9 +184,9 @@ void listenToWeight() {
   _scaleService.weightStream.listen(
     (weight) {
       print('Weight: ${weight.value} ${weight.unit}');
-      print('  Formatted: ${weight.formatted}');
-      print('  Stable: ${weight.isStable}');
-      print('  Timestamp: ${weight.timestamp}');
+      print('Formatted: ${weight.formatted}');
+      print('Stable: ${weight.isStable}');
+      print('Timestamp: ${weight.timestamp}');
       
       // Update UI
       updateWeightDisplay(weight);

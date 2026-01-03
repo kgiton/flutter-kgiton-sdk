@@ -77,5 +77,5 @@ KGiTON SDK
 ---
 
 <p align="center">
-  <strong>PT KGiTON</strong> © 2024-2026
+  <strong>PT KGiTON</strong> © 2026
 </p>

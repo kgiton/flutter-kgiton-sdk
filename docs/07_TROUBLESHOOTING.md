@@ -169,7 +169,7 @@ Panduan untuk mengatasi masalah umum saat menggunakan KGiTON SDK.
 2. **Verify base URL**
    ```dart
    print('Base URL: ${api.baseUrl}');
-   // Should be: https://api.kgiton.com
+   // Should be: https://api.example.com
    ```
 
 3. **Check for SSL issues**
@@ -262,7 +262,7 @@ Panduan untuk mengatasi masalah umum saat menggunakan KGiTON SDK.
      WidgetsFlutterBinding.ensureInitialized();
      
      final prefs = await SharedPreferences.getInstance();
-     final auth = KgitonAuthHelper(prefs, baseUrl: 'https://api.kgiton.com');
+     final auth = KgitonAuthHelper(prefs, baseUrl: 'https://api.example.com');
      
      // Try restore session
      final restored = await auth.restoreSession();

@@ -25,7 +25,7 @@ Tambahkan ke `pubspec.yaml`:
 dependencies:
   kgiton_sdk:
     git:
-      url: https://github.com/AkhmadFahr662/flutter-kgiton-sdk.git
+      url: https://github.com/kgiton/flutter-kgiton-sdk.git
       ref: main
 ```
 
@@ -141,11 +141,11 @@ import 'package:kgiton_sdk/kgiton_sdk.dart';
 
 ```dart
 // Dengan base URL
-final api = KgitonApiService(baseUrl: 'https://api.kgiton.com');
+final api = KgitonApiService(baseUrl: 'https://api.example.com');
 
 // Atau dengan token yang sudah ada
 final api = KgitonApiService(
-  baseUrl: 'https://api.kgiton.com',
+  baseUrl: 'https://api.example.com',
   accessToken: 'your-saved-token',
   apiKey: 'your-api-key',
 );
@@ -168,7 +168,7 @@ class AppInit {
     final prefs = await SharedPreferences.getInstance();
     
     // Initialize auth helper (handles token storage)
-    authHelper = KgitonAuthHelper(prefs, baseUrl: 'https://api.kgiton.com');
+    authHelper = KgitonAuthHelper(prefs, baseUrl: 'https://api.example.com');
     
     // Restore session if exists
     final isLoggedIn = await authHelper.restoreSession();
@@ -201,7 +201,7 @@ import 'package:kgiton_sdk/kgiton_sdk.dart';
 
 void verifyInstallation() {
   // Test API service
-  final api = KgitonApiService(baseUrl: 'https://api.kgiton.com');
+  final api = KgitonApiService(baseUrl: 'https://api.example.com');
   print('✅ API Service initialized');
   print('   Base URL: ${api.baseUrl}');
   
