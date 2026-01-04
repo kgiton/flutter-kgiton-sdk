@@ -68,7 +68,8 @@ class LicenseKey {
   factory LicenseKey.fromJson(Map<String, dynamic> json) {
     return LicenseKey(
       id: json['id'] as String,
-      key: json['key'] as String,
+      // Support both 'key' and 'license_key' field names
+      key: (json['key'] as String?) ?? (json['license_key'] as String?) ?? '',
       pricePerToken: ((json['price_per_token'] as num?) ?? 0).toDouble(),
       tokenBalance: (json['token_balance'] as int?) ?? 0,
       status: (json['status'] as String?) ?? 'inactive',
@@ -87,8 +88,8 @@ class LicenseKey {
       subscriptionExpiresAt: json['subscription_expires_at'] != null ? DateTime.parse(json['subscription_expires_at'] as String) : null,
       purchasePaymentStatus: json['purchase_payment_status'] as String?,
       purchasePaidAt: json['purchase_paid_at'] != null ? DateTime.parse(json['purchase_paid_at'] as String) : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : DateTime.now(),
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : DateTime.now(),
     );
   }
 
@@ -186,8 +187,15 @@ class TokenBalanceData {
   TokenBalanceData({required this.licenseKeys, required this.totalBalance});
 
   factory TokenBalanceData.fromJson(Map<String, dynamic> json) {
-    final licenseKeys = (json['license_keys'] as List? ?? []).map((e) => LicenseKeyBalance.fromJson(e as Map<String, dynamic>)).toList();
-    return TokenBalanceData(licenseKeys: licenseKeys, totalBalance: (json['total_balance'] as int?) ?? 0);
+    // Handle different response formats from API
+    // API returns 'token_licenses' or 'license_keys'
+    final licenseList = json['token_licenses'] as List? ?? json['license_keys'] as List? ?? [];
+    final licenseKeys = licenseList.map((e) => LicenseKeyBalance.fromJson(e as Map<String, dynamic>)).toList();
+
+    // API returns 'total_token_balance' or 'total_balance'
+    final totalBalance = (json['total_token_balance'] as int?) ?? (json['total_balance'] as int?) ?? 0;
+
+    return TokenBalanceData(licenseKeys: licenseKeys, totalBalance: totalBalance);
   }
 
   Map<String, dynamic> toJson() {
@@ -202,21 +210,37 @@ class LicenseKeyBalance {
   final int tokenBalance;
   final double pricePerToken;
   final String status;
+  final String? billingType;
 
-  LicenseKeyBalance({required this.id, required this.licenseKey, required this.tokenBalance, required this.pricePerToken, required this.status});
+  LicenseKeyBalance({
+    required this.id,
+    required this.licenseKey,
+    required this.tokenBalance,
+    required this.pricePerToken,
+    required this.status,
+    this.billingType,
+  });
 
   factory LicenseKeyBalance.fromJson(Map<String, dynamic> json) {
     return LicenseKeyBalance(
-      id: json['id'] as String,
+      id: (json['id'] as String?) ?? '',
       licenseKey: (json['license_key'] as String?) ?? (json['key'] as String?) ?? '',
       tokenBalance: (json['token_balance'] as int?) ?? 0,
       pricePerToken: ((json['price_per_token'] as num?) ?? 0).toDouble(),
       status: (json['status'] as String?) ?? 'inactive',
+      billingType: (json['billing_type'] as String?) ?? (json['purchase_type'] as String?),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'license_key': licenseKey, 'token_balance': tokenBalance, 'price_per_token': pricePerToken, 'status': status};
+    return {
+      'id': id,
+      'license_key': licenseKey,
+      'token_balance': tokenBalance,
+      'price_per_token': pricePerToken,
+      'status': status,
+      if (billingType != null) 'billing_type': billingType,
+    };
   }
 }
 

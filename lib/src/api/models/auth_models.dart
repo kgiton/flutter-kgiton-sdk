@@ -62,15 +62,44 @@ class User {
 class Session {
   final String accessToken;
   final int expiresAt;
+  final String? refreshToken;
 
-  Session({required this.accessToken, required this.expiresAt});
+  Session({required this.accessToken, required this.expiresAt, this.refreshToken});
 
   factory Session.fromJson(Map<String, dynamic> json) {
-    return Session(accessToken: (json['access_token'] as String?) ?? '', expiresAt: (json['expires_at'] as int?) ?? 0);
+    // Handle different response structures
+    // If access_token is directly in json (flat structure from API)
+    if (json.containsKey('access_token') && !json.containsKey('session')) {
+      return Session(
+        accessToken: (json['access_token'] as String?) ?? '',
+        refreshToken: json['refresh_token'] as String?,
+        expiresAt: (json['expires_at'] as int?) ?? _getDefaultExpiresAt(),
+      );
+    }
+    // If session object exists (nested structure)
+    else if (json.containsKey('session')) {
+      final session = json['session'] as Map<String, dynamic>?;
+      return Session(
+        accessToken: (session?['access_token'] as String?) ?? '',
+        refreshToken: session?['refresh_token'] as String?,
+        expiresAt: (session?['expires_at'] as int?) ?? _getDefaultExpiresAt(),
+      );
+    }
+    // Default fallback
+    return Session(
+      accessToken: (json['access_token'] as String?) ?? '',
+      refreshToken: json['refresh_token'] as String?,
+      expiresAt: (json['expires_at'] as int?) ?? _getDefaultExpiresAt(),
+    );
+  }
+
+  /// Get default expires_at timestamp (1 hour from now)
+  static int _getDefaultExpiresAt() {
+    return DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/ 1000;
   }
 
   Map<String, dynamic> toJson() {
-    return {'access_token': accessToken, 'expires_at': expiresAt};
+    return {'access_token': accessToken, 'expires_at': expiresAt, if (refreshToken != null) 'refresh_token': refreshToken};
   }
 
   /// Check if session is expired
@@ -88,7 +117,16 @@ class AuthData {
   AuthData({required this.user, required this.session});
 
   factory AuthData.fromJson(Map<String, dynamic> json) {
-    return AuthData(user: User.fromJson(json['user'] as Map<String, dynamic>), session: Session.fromJson(json['session'] as Map<String, dynamic>));
+    // Handle API response structure where user and tokens are at same level
+    final userJson = json['user'] as Map<String, dynamic>?;
+    if (userJson == null) {
+      throw FormatException('User data is missing in response');
+    }
+
+    // Create session from flat structure (access_token at root level)
+    final session = Session.fromJson(json);
+
+    return AuthData(user: User.fromJson(userJson), session: session);
   }
 
   Map<String, dynamic> toJson() {

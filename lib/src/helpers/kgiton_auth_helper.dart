@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/kgiton_api_service.dart';
 import '../api/models/auth_models.dart';
+import '../utils/debug_logger.dart';
 
 /// Helper service untuk authentication dan session management
 ///
@@ -53,11 +54,22 @@ class KgitonAuthHelper {
   final SharedPreferences _prefs;
   final KgitonApiService _apiService;
 
-  /// Create auth helper instance
+  /// Create auth helper instance with new API service
   ///
   /// [prefs] - SharedPreferences instance for token storage
   /// [baseUrl] - API base URL
   KgitonAuthHelper(this._prefs, {required String baseUrl}) : _apiService = KgitonApiService(baseUrl: baseUrl);
+
+  /// Create auth helper instance with existing API service
+  ///
+  /// Use this constructor when you want to share the same API service instance
+  /// across multiple helpers (e.g., LicenseHelper, TopupHelper).
+  /// This ensures that tokens set after login are automatically available
+  /// to all services using the same API service instance.
+  ///
+  /// [prefs] - SharedPreferences instance for token storage
+  /// [apiService] - Existing KgitonApiService instance to reuse
+  KgitonAuthHelper.withApiService(this._prefs, this._apiService);
 
   // ============================================
   // LOGIN STATUS
@@ -166,6 +178,8 @@ class KgitonAuthHelper {
   /// - data: AuthData (if success)
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
+      DebugLogger.logAuth('Login attempt', details: 'Email: $email');
+
       final authData = await _apiService.auth.login(email: email, password: password);
 
       // Save tokens and user info
@@ -175,8 +189,10 @@ class KgitonAuthHelper {
       _apiService.setAccessToken(authData.accessToken);
       _apiService.setApiKey(authData.user.apiKey);
 
+      DebugLogger.logAuth('Login successful', details: 'User: ${authData.user.name}');
       return {'success': true, 'message': 'Login berhasil', 'data': authData};
-    } catch (e) {
+    } catch (e, stackTrace) {
+      DebugLogger.logError('Login failed', error: e, stackTrace: stackTrace);
       return {'success': false, 'message': 'Login gagal: ${e.toString()}'};
     }
   }

@@ -48,6 +48,9 @@ class KGiTONScaleService {
   ScaleConnectionState _connectionState = ScaleConnectionState.disconnected;
   final List<ScaleDevice> _availableDevices = [];
 
+  // Flag to prevent processing after scan stopped
+  bool _isScanning = false;
+
   // Storage key untuk license key mapping
   static const String _storageKey = 'kgiton_device_licenses';
 
@@ -125,6 +128,9 @@ class KGiTONScaleService {
   Timer? _deviceProcessingTimer;
   List<BleDevice>? _pendingDevices;
 
+  // Timer untuk scan timeout - harus disimpan agar bisa dibatalkan
+  Timer? _scanTimeoutTimer;
+
   /// Scan untuk menemukan perangkat timbangan
   ///
   /// [timeout] - Durasi maksimal scan (default: 10 detik)
@@ -133,10 +139,11 @@ class KGiTONScaleService {
   ///
   /// Throws [BLEConnectionException] jika gagal memulai scan
   Future<void> scanForDevices({Duration? timeout, bool autoStopOnFound = false, bool retryOnBluetoothError = true}) async {
-    if (_connectionState == ScaleConnectionState.scanning) {
+    if (_connectionState == ScaleConnectionState.scanning || _isScanning) {
       return;
     }
 
+    _isScanning = true;
     _updateConnectionState(ScaleConnectionState.scanning);
     _availableDevices.clear();
     _devicesController.add([]);
@@ -156,12 +163,19 @@ class KGiTONScaleService {
 
       _scanSubscription = _bleSdk.scanResults.listen(
         (devices) {
+          // CRITICAL: Check flag FIRST and return immediately if not scanning
+          // This prevents any processing of stale data from native SDK
+          if (!_isScanning) {
+            return;
+          }
+
           // Debounce device processing - wait 300ms before processing
           // This prevents excessive processing when multiple devices are found rapidly
           _pendingDevices = devices;
           _deviceProcessingTimer?.cancel();
           _deviceProcessingTimer = Timer(const Duration(milliseconds: 300), () {
-            if (_pendingDevices != null) {
+            // Double-check flag before processing
+            if (_pendingDevices != null && _isScanning && _connectionState == ScaleConnectionState.scanning) {
               _processScannedDevices(_pendingDevices!, autoStopOnFound: autoStopOnFound);
               _pendingDevices = null;
             }
@@ -173,16 +187,16 @@ class KGiTONScaleService {
       );
 
       // Start scan without name filter (we'll filter in Dart)
-      await _bleSdk.startScan(timeout: scanTimeout);
+      // Use 5 second timeout to match Flutter countdown timer
+      await _bleSdk.startScan(timeout: const Duration(seconds: 5));
 
-      // Auto stop setelah timeout
-      Timer(scanTimeout, () {
+      // Cancel any existing timeout timer
+      _scanTimeoutTimer?.cancel();
+
+      // Auto stop setelah timeout - simpan timer agar bisa dibatalkan
+      _scanTimeoutTimer = Timer(scanTimeout, () {
         if (_connectionState == ScaleConnectionState.scanning) {
           stopScan();
-
-          if (_availableDevices.isEmpty) {
-            _updateConnectionState(ScaleConnectionState.disconnected);
-          }
         }
       });
     } catch (e) {
@@ -223,6 +237,9 @@ class KGiTONScaleService {
 
   /// Process scanned devices with license key mapping
   Future<void> _processScannedDevices(List<BleDevice> devices, {bool autoStopOnFound = false}) async {
+    // Skip if not scanning anymore
+    if (!_isScanning) return;
+
     _availableDevices.clear();
 
     // Load license key map untuk mapping ke device
@@ -232,9 +249,7 @@ class KGiTONScaleService {
     for (final device in devices) {
       // Filter: name must contain "KGiTON" (case-insensitive)
       if (device.name.toUpperCase().contains(BLEConstants.deviceName.toUpperCase())) {
-        // Cari license key untuk device ini
         final licenseKey = licenseMap[device.id];
-
         final scaleDevice = ScaleDevice.fromBleDevice(device.name, device.id, device.rssi, licenseKey: licenseKey);
         _availableDevices.add(scaleDevice);
       }
@@ -251,19 +266,26 @@ class KGiTONScaleService {
 
   /// Stop scanning
   void stopScan() {
+    // Set flag FIRST to stop all processing immediately
+    _isScanning = false;
+
+    // Cancel timeout timer
+    _scanTimeoutTimer?.cancel();
+    _scanTimeoutTimer = null;
+
     // Cancel debounce timer
     _deviceProcessingTimer?.cancel();
     _deviceProcessingTimer = null;
     _pendingDevices = null;
 
-    // Cancel scan subscription
+    // Cancel scan subscription BEFORE stopping native SDK
     _scanSubscription?.cancel();
     _scanSubscription = null;
 
     try {
       _bleSdk.stopScan();
     } catch (e) {
-      // Ignore error
+      // Ignore - scan might already be stopped
     }
 
     if (_connectionState == ScaleConnectionState.scanning) {

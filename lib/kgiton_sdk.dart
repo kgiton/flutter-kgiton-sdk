@@ -57,6 +57,7 @@ export 'src/exceptions/kgiton_exceptions.dart';
 
 // Utils
 export 'src/utils/permission_helper.dart';
+export 'src/utils/debug_logger.dart';
 
 // ==================== API Services ====================
 // API Client & Main Service

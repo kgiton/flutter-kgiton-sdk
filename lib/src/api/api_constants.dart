@@ -11,7 +11,7 @@ library;
 class KgitonApiConfig {
   /// Default base URL (can be overridden during initialization)
   /// 🔧 CHANGE THIS: Update this URL when API endpoint changes
-  static const String defaultBaseUrl = 'https://api.kgiton.com';
+  static const String defaultBaseUrl = 'http://192.168.14.29:3000';
 
   /// API version prefix
   /// 🔧 CHANGE THIS: Update version prefix if API versioning changes

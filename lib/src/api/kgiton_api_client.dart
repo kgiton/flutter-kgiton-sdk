@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_constants.dart';
 import 'exceptions/api_exceptions.dart';
 import 'models/api_response.dart';
+import '../utils/debug_logger.dart';
 
 /// API Client configuration and management
 class KgitonApiClient {
@@ -233,15 +234,15 @@ class KgitonApiClient {
         uri = uri.replace(queryParameters: queryParameters);
       }
 
-      final response = await _httpClient
-          .get(
-            uri,
-            headers: _getHeaders(requiresAuth: requiresAuth, useApiKey: useApiKey),
-          )
-          .timeout(KgitonApiConfig.requestTimeout);
+      final headers = _getHeaders(requiresAuth: requiresAuth, useApiKey: useApiKey);
+      DebugLogger.logRequest('GET', uri.toString(), headers: headers);
 
+      final response = await _httpClient.get(uri, headers: headers).timeout(KgitonApiConfig.requestTimeout);
+
+      DebugLogger.logResponse('GET', uri.toString(), response.statusCode, response.body);
       return _handleResponse<T>(response, fromJsonT);
     } catch (e) {
+      DebugLogger.logError('GET request failed', error: e);
       if (e is KgitonApiException) rethrow;
       throw KgitonApiException(message: 'Network error: $e');
     }
@@ -257,17 +258,18 @@ class KgitonApiClient {
   }) async {
     try {
       final uri = Uri.parse(_buildUrl(endpoint));
+      final headers = _getHeaders(requiresAuth: requiresAuth, useApiKey: useApiKey);
+
+      DebugLogger.logRequest('POST', uri.toString(), headers: headers, body: body);
 
       final response = await _httpClient
-          .post(
-            uri,
-            headers: _getHeaders(requiresAuth: requiresAuth, useApiKey: useApiKey),
-            body: body != null ? json.encode(body) : null,
-          )
+          .post(uri, headers: headers, body: body != null ? json.encode(body) : null)
           .timeout(KgitonApiConfig.requestTimeout);
 
+      DebugLogger.logResponse('POST', uri.toString(), response.statusCode, response.body);
       return _handleResponse<T>(response, fromJsonT);
     } catch (e) {
+      DebugLogger.logError('POST request failed', error: e);
       if (e is KgitonApiException) rethrow;
       throw KgitonApiException(message: 'Network error: $e');
     }
