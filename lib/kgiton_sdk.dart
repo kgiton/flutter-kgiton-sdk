@@ -1,4 +1,4 @@
-/// KGiTON BLE Scale SDK
+/// KGiTON BLE Scale SDK (Client Edition)
 ///
 /// Flutter SDK untuk integrasi timbangan berbasis ESP32 via BLE.
 /// Mendukung autentikasi license key, kontrol buzzer, dan streaming data berat realtime.

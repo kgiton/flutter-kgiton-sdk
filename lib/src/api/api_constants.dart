@@ -10,7 +10,9 @@ library;
 /// API Configuration
 class KgitonApiConfig {
   /// Default base URL (can be overridden during initialization)
-  /// 🔧 CHANGE THIS: Update this URL when API endpoint changes
+  /// TODO: 🔧 CHANGE THIS: Update this URL when API endpoint changes
+  /// To check IP address in terminal:
+  /// >> ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}'
   static const String defaultBaseUrl = 'http://192.168.14.29:3000';
 
   /// API version prefix
@@ -91,8 +93,8 @@ class KgitonApiEndpoints {
   // ============================================================================
 
   /// Validate license key (public endpoint)
-  /// POST /api/licenses/validate
-  static const String validateLicense = '/licenses/validate';
+  /// GET /api/license/validate/{license_key}
+  static String validateLicense(String licenseKey) => '/license/validate/$licenseKey';
 
   // ============================================================================
   // TOP-UP ENDPOINTS
@@ -141,106 +143,6 @@ class KgitonApiEndpoints {
   /// Initiate license subscription payment (for rent type)
   /// POST /api/license-transactions/subscription
   static const String initiateSubscription = '/license-transactions/subscription';
-
-  // ============================================================================
-  // ADMIN LICENSE ENDPOINTS (Super Admin only)
-  // ============================================================================
-
-  /// Create license key
-  /// POST /api/admin/license-keys
-  static const String createLicenseKey = '/admin/license-keys';
-
-  /// Bulk create license keys
-  /// POST /api/admin/license-keys/bulk
-  static const String bulkCreateLicenseKeys = '/admin/license-keys/bulk';
-
-  /// Upload licenses from CSV
-  /// POST /api/admin/license-keys/bulk-upload
-  static const String bulkUploadLicenses = '/admin/license-keys/bulk-upload';
-
-  /// Get all license keys
-  /// GET /api/admin/license-keys
-  static const String getAllLicenseKeys = '/admin/license-keys';
-
-  /// Get all licenses with devices
-  /// GET /api/admin/license-keys/with-devices
-  static const String getAllLicensesWithDevices = '/admin/license-keys/with-devices';
-
-  /// Get license key by ID
-  /// GET /api/admin/license-keys/{id}
-  static String getLicenseKeyById(String id) => '/admin/license-keys/$id';
-
-  /// Update license key by ID
-  /// PUT /api/admin/license-keys/{id}
-  static String updateLicenseKeyById(String id) => '/admin/license-keys/$id';
-
-  /// Delete license key by ID
-  /// DELETE /api/admin/license-keys/{id}
-  static String deleteLicenseKeyById(String id) => '/admin/license-keys/$id';
-
-  /// Get license key by key string
-  /// GET /api/admin/license-keys/key/{key}
-  static String getLicenseKeyByKey(String key) => '/admin/license-keys/key/$key';
-
-  /// Update license key by key string
-  /// PUT /api/admin/license-keys/key/{key}
-  static String updateLicenseKeyByKey(String key) => '/admin/license-keys/key/$key';
-
-  /// Delete license key by key string
-  /// DELETE /api/admin/license-keys/key/{key}
-  static String deleteLicenseKeyByKey(String key) => '/admin/license-keys/key/$key';
-
-  /// Set trial mode for license key
-  /// POST /api/admin/license-keys/{id}/trial
-  static String setTrialMode(String id) => '/admin/license-keys/$id/trial';
-
-  /// Add token balance to license key
-  /// POST /api/admin/license-keys/{id}/add-tokens
-  static String addTokenBalance(String id) => '/admin/license-keys/$id/add-tokens';
-
-  /// Unassign license key from user
-  /// POST /api/admin/license-keys/{id}/unassign
-  static String unassignLicenseKey(String id) => '/admin/license-keys/$id/unassign';
-
-  /// Confirm cash payment for license
-  /// POST /api/admin/license-keys/{id}/confirm-payment
-  static String confirmCashPayment(String id) => '/admin/license-keys/$id/confirm-payment';
-
-  /// Initiate payment for license (admin)
-  /// POST /api/admin/license-keys/{id}/initiate-payment
-  static String initiatePayment(String id) => '/admin/license-keys/$id/initiate-payment';
-
-  /// Renew subscription for license
-  /// POST /api/admin/license-keys/{id}/renew
-  static String renewSubscription(String id) => '/admin/license-keys/$id/renew';
-
-  // ============================================================================
-  // ADMIN TOP-UP ENDPOINTS (Super Admin only)
-  // ============================================================================
-
-  /// Get all transactions (admin)
-  /// GET /api/topup/admin/all
-  static const String getAllTransactions = '/topup/admin/all';
-
-  // ============================================================================
-  // ADMIN LICENSE TRANSACTION ENDPOINTS (Super Admin only)
-  // ============================================================================
-
-  /// Get all license transactions
-  /// GET /api/license-transactions/admin
-  static const String adminAllLicenseTransactions = '/license-transactions/admin';
-
-  /// Get license status summary
-  /// GET /api/license-transactions/admin/summary
-  static const String adminLicenseStatusSummary = '/license-transactions/admin/summary';
-
-  /// Get license transaction by ID
-  /// GET /api/license-transactions/admin/{id}
-  static String adminGetLicenseTransactionById(String id) => '/license-transactions/admin/$id';
-
-  /// Get transactions by license key
-  /// GET /api/license-transactions/admin/license/{licenseKey}
-  static String adminGetTransactionsByLicenseKey(String licenseKey) => '/license-transactions/admin/license/$licenseKey';
 }
 
 /// HTTP Status Codes
@@ -278,7 +180,6 @@ class PaginationDefaults {
 
 /// User role values
 class UserRole {
-  static const String superAdmin = 'super_admin';
   static const String user = 'user';
 }
 

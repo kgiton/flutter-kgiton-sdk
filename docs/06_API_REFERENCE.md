@@ -1,4 +1,4 @@
-# 📖 API Reference
+# 📖 API Reference (Client Edition)
 
 Referensi lengkap semua API yang tersedia di KGiTON SDK.
 

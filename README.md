@@ -2,7 +2,7 @@
   <img src="logo/kgiton-logo.png" alt="KGiTON Logo" width="300"/>
 </p>
 
-<h1 align="center">KGiTON Flutter SDK</h1>
+<h1 align="center">KGiTON Flutter SDK (Client Edition)</h1>
 
 <p align="center">
   <strong>Official Flutter SDK for KGiTON Scale Devices & API Integration</strong>

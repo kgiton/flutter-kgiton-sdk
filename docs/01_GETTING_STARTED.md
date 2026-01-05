@@ -1,4 +1,4 @@
-# 🚀 Getting Started
+# 🚀 Getting Started (Client Edition)
 
 Panduan lengkap untuk memulai menggunakan KGiTON Flutter SDK.
 

@@ -97,7 +97,7 @@ class KgitonLicenseHelper {
   // VALIDATE LICENSE
   // ============================================
 
-  /// Validate license key (public endpoint - no auth required)
+  /// Validate license key
   ///
   /// Returns map with:
   /// - success: bool
@@ -107,7 +107,7 @@ class KgitonLicenseHelper {
     try {
       final response = await _apiService.license.validateLicense(licenseKey);
 
-      return {'success': true, 'message': response.valid ? 'License valid' : 'License tidak valid', 'data': response};
+      return {'success': true, 'message': response.isValid ? 'License valid' : 'License tidak valid', 'data': response};
     } catch (e) {
       return {'success': false, 'message': 'Gagal validasi license: ${e.toString()}'};
     }

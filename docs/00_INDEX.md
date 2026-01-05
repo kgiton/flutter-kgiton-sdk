@@ -1,4 +1,4 @@
-# 📚 Dokumentasi KGiTON Flutter SDK
+# 📚 Dokumentasi KGiTON Flutter SDK (Client Edition)
 
 Selamat datang di dokumentasi KGiTON Flutter SDK. Panduan ini akan membantu Anda mengintegrasikan SDK ke dalam aplikasi Flutter Anda.
 

@@ -329,43 +329,77 @@ class UseTokenResponse {
   }
 }
 
-/// Validate license request
-class ValidateLicenseRequest {
-  final String licenseKey;
-
-  ValidateLicenseRequest({required this.licenseKey});
-
-  Map<String, dynamic> toJson() {
-    return {'license_key': licenseKey};
-  }
-}
-
 /// Validate license response
+/// Matches the API response from GET /api/license/validate/{license_key}
 class ValidateLicenseResponse {
-  final bool valid;
+  final String licenseKey;
+  final bool exists;
+  final bool isValid;
+  final bool isAssigned;
   final String? status;
-  final String? message;
-  final LicenseKey? licenseKey;
+  final int? tokenBalance;
+  final double? pricePerToken;
+  final String? deviceName;
+  final String? deviceModel;
+  final String? purchaseType;
+  final String? subscriptionStatus;
+  final bool? subscriptionValid;
+  final DateTime? subscriptionDueDate;
 
-  ValidateLicenseResponse({required this.valid, this.status, this.message, this.licenseKey});
+  ValidateLicenseResponse({
+    required this.licenseKey,
+    required this.exists,
+    required this.isValid,
+    required this.isAssigned,
+    this.status,
+    this.tokenBalance,
+    this.pricePerToken,
+    this.deviceName,
+    this.deviceModel,
+    this.purchaseType,
+    this.subscriptionStatus,
+    this.subscriptionValid,
+    this.subscriptionDueDate,
+  });
 
   factory ValidateLicenseResponse.fromJson(Map<String, dynamic> json) {
     return ValidateLicenseResponse(
-      valid: (json['valid'] as bool?) ?? false,
+      licenseKey: (json['license_key'] as String?) ?? '',
+      exists: (json['exists'] as bool?) ?? false,
+      isValid: (json['is_valid'] as bool?) ?? false,
+      isAssigned: (json['is_assigned'] as bool?) ?? false,
       status: json['status'] as String?,
-      message: json['message'] as String?,
-      licenseKey: json['license_key'] != null ? LicenseKey.fromJson(json['license_key'] as Map<String, dynamic>) : null,
+      tokenBalance: json['token_balance'] as int?,
+      pricePerToken: (json['price_per_token'] as num?)?.toDouble(),
+      deviceName: json['device_name'] as String?,
+      deviceModel: json['device_model'] as String?,
+      purchaseType: json['purchase_type'] as String?,
+      subscriptionStatus: json['subscription_status'] as String?,
+      subscriptionValid: json['subscription_valid'] as bool?,
+      subscriptionDueDate: json['subscription_due_date'] != null ? DateTime.parse(json['subscription_due_date'] as String) : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'valid': valid,
+      'license_key': licenseKey,
+      'exists': exists,
+      'is_valid': isValid,
+      'is_assigned': isAssigned,
       if (status != null) 'status': status,
-      if (message != null) 'message': message,
-      if (licenseKey != null) 'license_key': licenseKey!.toJson(),
+      if (tokenBalance != null) 'token_balance': tokenBalance,
+      if (pricePerToken != null) 'price_per_token': pricePerToken,
+      if (deviceName != null) 'device_name': deviceName,
+      if (deviceModel != null) 'device_model': deviceModel,
+      if (purchaseType != null) 'purchase_type': purchaseType,
+      if (subscriptionStatus != null) 'subscription_status': subscriptionStatus,
+      if (subscriptionValid != null) 'subscription_valid': subscriptionValid,
+      if (subscriptionDueDate != null) 'subscription_due_date': subscriptionDueDate!.toIso8601String(),
     };
   }
+
+  /// Convenience getter - same as isValid
+  bool get valid => isValid;
 }
 
 /// Assign license request
