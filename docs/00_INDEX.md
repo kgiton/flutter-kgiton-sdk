@@ -15,6 +15,7 @@ Selamat datang di dokumentasi KGiTON Flutter SDK. Panduan ini akan membantu Anda
 | 5 | [BLE Integration](05_BLE_INTEGRATION.md) | Koneksi ke timbangan, streaming berat, buzzer |
 | 6 | [API Reference](06_API_REFERENCE.md) | Referensi lengkap semua API |
 | 7 | [Troubleshooting](07_TROUBLESHOOTING.md) | Masalah umum dan solusinya |
+| 8 | [Connection Sequence Diagram](08_CONNECTION_SEQUENCE_DIAGRAM.md) | Diagram alur koneksi ke timbangan |
 
 ---
 
