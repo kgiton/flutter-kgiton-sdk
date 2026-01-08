@@ -1,22 +1,22 @@
 /// ============================================================================
 /// Device Page
 /// ============================================================================
-/// 
+///
 /// File: src/presentation/pages/device/device_page.dart
 /// Deskripsi: Halaman untuk scan, connect, dan monitor device
 /// ============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/theme/theme.dart';
 import '../../../domain/entities/scale_device_entity.dart';
-import '../../../injection/injection.dart';
 import '../../bloc/scale/scale_bloc.dart';
 import '../../bloc/scale/scale_event.dart';
 import '../../bloc/scale/scale_state.dart';
 
-class DevicePage extends StatelessWidget {
+class DevicePage extends StatefulWidget {
   final String licenseKey;
 
   const DevicePage({
@@ -25,98 +25,127 @@ class DevicePage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    // Create new ScaleBloc instance untuk page ini
-    return BlocProvider(
-      create: (_) => getIt<ScaleBloc>(),
-      child: _DevicePageContent(licenseKey: licenseKey),
-    );
-  }
+  State<DevicePage> createState() => _DevicePageState();
 }
 
-class _DevicePageContent extends StatelessWidget {
-  final String licenseKey;
+class _DevicePageState extends State<DevicePage> {
+  late TextEditingController _licenseController;
 
-  const _DevicePageContent({required this.licenseKey});
+  @override
+  void initState() {
+    super.initState();
+    _licenseController = TextEditingController(text: widget.licenseKey);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Start scanning automatically
+      context.read<ScaleBloc>().add(const StartScanEvent());
+    });
+  }
+
+  @override
+  void dispose() {
+    _licenseController.dispose();
+    context.read<ScaleBloc>().add(const StopScanEvent());
+    super.dispose();
+  }
+
+  String get _currentLicenseKey => _licenseController.text.trim();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Connect Device'),
-        actions: [
-          BlocBuilder<ScaleBloc, ScaleState>(
-            builder: (context, state) {
-              if (state is ScaleConnected) {
-                return IconButton(
-                  icon: const Icon(Icons.volume_up),
-                  onPressed: () {
-                    context.read<ScaleBloc>().add(const TriggerBuzzerEvent());
-                  },
-                  tooltip: 'Trigger Buzzer',
-                );
-              }
-              return const SizedBox.shrink();
-            },
+    return BlocListener<ScaleBloc, ScaleState>(
+      listener: (context, state) {
+        if (state is ScaleConnected) {
+          Navigator.pop(context);
+          _showSnackBar('Berhasil terhubung!', KGiTONColors.success);
+        } else if (state is ScaleError) {
+          _showSnackBar(state.message, KGiTONColors.error);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Connect Device'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner),
+              onPressed: _scanQRCode,
+              tooltip: 'Scan QR License',
+            ),
+            BlocBuilder<ScaleBloc, ScaleState>(
+              builder: (context, state) {
+                if (state is ScaleConnected) {
+                  return IconButton(
+                    icon: const Icon(Icons.volume_up),
+                    onPressed: () {
+                      context.read<ScaleBloc>().add(const TriggerBuzzerEvent());
+                    },
+                    tooltip: 'Trigger Buzzer',
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // License Key Input
+            _buildLicenseInput(),
+            // Main Content
+            Expanded(
+              child: BlocBuilder<ScaleBloc, ScaleState>(
+                builder: (context, state) {
+                  return _buildStateContent(context, state);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLicenseInput() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: KGiTONColors.primary.withValues(alpha: 0.1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('License Key', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _licenseController,
+            decoration: InputDecoration(
+              hintText: 'XXXX-XXXX-XXXX-XXXX',
+              prefixIcon: const Icon(Icons.vpn_key),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.qr_code_scanner),
+                onPressed: _scanQRCode,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
           ),
         ],
       ),
-      body: BlocConsumer<ScaleBloc, ScaleState>(
-        listener: (context, state) {
-          if (state is ScaleError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: KGiTONColors.error,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          return Column(
-            children: [
-              // License Key Info
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                color: KGiTONColors.primary.withValues(alpha: 0.1),
-                child: Row(
-                  children: [
-                    const Icon(Icons.vpn_key, color: KGiTONColors.primary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'License Key',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          Text(
-                            licenseKey,
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Main Content
-              Expanded(
-                child: _buildStateContent(context, state),
-              ),
-            ],
-          );
-        },
-      ),
+    );
+  }
+
+  Future<void> _scanQRCode() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const _QRScannerScreen()),
+    );
+    if (result != null) {
+      setState(() {
+        _licenseController.text = result;
+      });
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color),
     );
   }
 
@@ -125,27 +154,27 @@ class _DevicePageContent extends StatelessWidget {
     if (state is ScaleInitial || state is ScaleDisconnected) {
       return _buildInitialState(context);
     }
-    
+
     // Scanning state - show device list
     if (state is ScaleScanning) {
       return _buildScanningState(context, state);
     }
-    
+
     // Connecting state - show loading
     if (state is ScaleConnecting) {
       return _buildConnectingState(state);
     }
-    
+
     // Connected state - show weight monitor
     if (state is ScaleConnected) {
       return _buildConnectedState(context, state);
     }
-    
+
     // Error state
     if (state is ScaleError) {
       return _buildErrorState(context, state);
     }
-    
+
     return const SizedBox.shrink();
   }
 
@@ -226,7 +255,7 @@ class _DevicePageContent extends StatelessWidget {
           ),
         ),
         const Divider(height: 1),
-        
+
         // Device list
         Expanded(
           child: state.devices.isEmpty
@@ -234,8 +263,7 @@ class _DevicePageContent extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.bluetooth_searching, 
-                           size: 48, color: Colors.grey[400]),
+                      Icon(Icons.bluetooth_searching, size: 48, color: Colors.grey[400]),
                       const SizedBox(height: 16),
                       Text(
                         'Mencari device...',
@@ -285,10 +313,14 @@ class _DevicePageContent extends StatelessWidget {
         ),
         trailing: ElevatedButton(
           onPressed: () {
+            if (_currentLicenseKey.isEmpty) {
+              _showSnackBar('Masukkan license key terlebih dahulu', KGiTONColors.error);
+              return;
+            }
             context.read<ScaleBloc>().add(ConnectDeviceEvent(
-              deviceId: device.id,
-              licenseKey: licenseKey,
-            ));
+                  deviceId: device.id,
+                  licenseKey: _currentLicenseKey,
+                ));
           },
           child: const Text('Connect'),
         ),
@@ -361,9 +393,9 @@ class _DevicePageContent extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const Spacer(),
-          
+
           // Weight display
           Container(
             width: double.infinity,
@@ -407,9 +439,9 @@ class _DevicePageContent extends StatelessWidget {
               ],
             ),
           ),
-          
+
           const Spacer(),
-          
+
           // Disconnect button
           SizedBox(
             width: double.infinity,
@@ -418,8 +450,8 @@ class _DevicePageContent extends StatelessWidget {
               label: const Text('Disconnect'),
               onPressed: () {
                 context.read<ScaleBloc>().add(DisconnectDeviceEvent(
-                  licenseKey: licenseKey,
-                ));
+                      licenseKey: _currentLicenseKey,
+                    ));
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: KGiTONColors.error,
@@ -461,6 +493,70 @@ class _DevicePageContent extends StatelessWidget {
             onPressed: () {
               context.read<ScaleBloc>().add(const StartScanEvent());
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// QR Scanner Screen for scanning license key
+class _QRScannerScreen extends StatefulWidget {
+  const _QRScannerScreen();
+
+  @override
+  State<_QRScannerScreen> createState() => _QRScannerScreenState();
+}
+
+class _QRScannerScreenState extends State<_QRScannerScreen> {
+  bool _hasScanned = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Scan License Key')),
+      body: Stack(
+        children: [
+          MobileScanner(
+            onDetect: (capture) {
+              if (_hasScanned) return;
+              for (final barcode in capture.barcodes) {
+                if (barcode.rawValue != null) {
+                  _hasScanned = true;
+                  Navigator.pop(context, barcode.rawValue);
+                  return;
+                }
+              }
+            },
+          ),
+          Center(
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                border: Border.all(color: KGiTONColors.primary, width: 3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Text(
+              'Arahkan kamera ke QR Code\nLicense Key',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

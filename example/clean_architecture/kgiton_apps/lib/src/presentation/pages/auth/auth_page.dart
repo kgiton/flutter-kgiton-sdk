@@ -1,14 +1,7 @@
-/// ============================================================================
-/// Auth Page
-/// ============================================================================
-/// 
-/// File: src/presentation/pages/auth/auth_page.dart
-/// Deskripsi: Halaman authentication dengan tab login/register
-/// ============================================================================
+/// ============================================================================\n/// Auth Page\n/// ============================================================================\n/// \n/// File: src/presentation/pages/auth/auth_page.dart\n/// Deskripsi: Halaman authentication dengan tab login/register\n/// ============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/theme.dart';
 import '../../bloc/auth/auth_bloc.dart';
@@ -71,25 +64,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
               children: [
                 const SizedBox(height: 32),
                 // Logo
-                SvgPicture.asset(
-                  'assets/kgiton_logo.svg',
-                  width: 80,
-                  height: 80,
-                  colorFilter: const ColorFilter.mode(
-                    KGiTONColors.primary,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'KGiTON Scale',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                _buildLogo(),
                 const SizedBox(height: 32),
-                
+
                 // Tab Bar
                 Container(
                   decoration: BoxDecoration(
@@ -113,7 +90,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Tab Views
                 Expanded(
                   child: TabBarView(
@@ -129,6 +106,32 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLogo() {
+    return Column(
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: KGiTONColors.primary,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Icon(Icons.scale, size: 40, color: Colors.white),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'KGiTON',
+          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                color: KGiTONColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text('Smart Scale Solution', style: Theme.of(context).textTheme.bodyMedium),
+      ],
     );
   }
 }
@@ -179,7 +182,7 @@ class _LoginFormState extends State<_LoginForm> {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Password
           TextFormField(
             controller: _passwordController,
@@ -206,7 +209,7 @@ class _LoginFormState extends State<_LoginForm> {
             },
           ),
           const SizedBox(height: 32),
-          
+
           // Login Button
           BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
@@ -237,9 +240,9 @@ class _LoginFormState extends State<_LoginForm> {
   void _onLogin() {
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(LoginEvent(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      ));
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          ));
     }
   }
 }
@@ -292,7 +295,7 @@ class _RegisterFormState extends State<_RegisterForm> {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Email
           TextFormField(
             controller: _emailController,
@@ -312,7 +315,7 @@ class _RegisterFormState extends State<_RegisterForm> {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Password
           TextFormField(
             controller: _passwordController,
@@ -342,7 +345,7 @@ class _RegisterFormState extends State<_RegisterForm> {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Confirm Password
           TextFormField(
             controller: _confirmPasswordController,
@@ -359,7 +362,7 @@ class _RegisterFormState extends State<_RegisterForm> {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // License Key
           TextFormField(
             controller: _licenseKeyController,
@@ -376,7 +379,7 @@ class _RegisterFormState extends State<_RegisterForm> {
             },
           ),
           const SizedBox(height: 32),
-          
+
           // Register Button
           BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
@@ -407,11 +410,11 @@ class _RegisterFormState extends State<_RegisterForm> {
   void _onRegister() {
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(RegisterEvent(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        licenseKey: _licenseKeyController.text.trim(),
-      ));
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            licenseKey: _licenseKeyController.text.trim(),
+          ));
     }
   }
 }

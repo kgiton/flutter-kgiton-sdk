@@ -1,10 +1,10 @@
 /// ============================================================================
 /// Dependency Injection Configuration
 /// ============================================================================
-/// 
+///
 /// File: src/injection/injection.dart
 /// Deskripsi: Setup GetIt untuk dependency injection
-/// 
+///
 /// Clean Architecture membutuhkan DI untuk:
 /// 1. Memisahkan pembuatan object dari penggunaan
 /// 2. Memudahkan testing dengan mock dependencies
@@ -48,7 +48,7 @@ import '../presentation/bloc/scale/scale_bloc.dart';
 final getIt = GetIt.instance;
 
 /// Configure all dependencies
-/// 
+///
 /// Urutan registrasi penting:
 /// 1. External dependencies (SharedPreferences, API client)
 /// 2. Data sources
@@ -59,60 +59,60 @@ Future<void> configureDependencies() async {
   // ==========================================================================
   // External Dependencies
   // ==========================================================================
-  
+
   // SharedPreferences - async initialization
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
-  
+
   // KGiTON API Service
   getIt.registerLazySingleton<KgitonApiService>(
     () => KgitonApiService(baseUrl: AppConstants.apiBaseUrl),
   );
-  
+
   // KGiTON Scale Service
   getIt.registerLazySingleton<KGiTONScaleService>(
     () => KGiTONScaleService(),
   );
-  
+
   // ==========================================================================
   // Data Sources
   // ==========================================================================
-  
+
   getIt.registerLazySingleton<AuthLocalDataSource>(
     () => AuthLocalDataSourceImpl(sharedPreferences: getIt()),
   );
-  
+
   getIt.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(apiService: getIt()),
   );
-  
+
   getIt.registerLazySingleton<ScaleDataSource>(
     () => ScaleDataSourceImpl(scaleService: getIt()),
   );
-  
+
   // ==========================================================================
   // Repositories
   // Implementasi dari domain layer interfaces
   // ==========================================================================
-  
+
   getIt.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
       remoteDataSource: getIt(),
       localDataSource: getIt(),
     ),
   );
-  
+
   getIt.registerLazySingleton<ScaleRepository>(
     () => ScaleRepositoryImpl(
       dataSource: getIt(),
     ),
   );
-  
+
   // ==========================================================================
   // Use Cases
   // Satu use case = satu action bisnis
   // ==========================================================================
-  
+
   getIt.registerLazySingleton(() => LoginUseCase(getIt()));
   getIt.registerLazySingleton(() => RegisterUseCase(getIt()));
   getIt.registerLazySingleton(() => LogoutUseCase(getIt()));
@@ -122,11 +122,11 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => StopScanUseCase(getIt()));
   getIt.registerLazySingleton(() => ConnectDeviceUseCase(getIt()));
   getIt.registerLazySingleton(() => DisconnectDeviceUseCase(getIt()));
-  
+
   // ==========================================================================
   // BLoCs
   // ==========================================================================
-  
+
   getIt.registerLazySingleton<AuthBloc>(
     () => AuthBloc(
       loginUseCase: getIt(),
@@ -137,8 +137,8 @@ Future<void> configureDependencies() async {
       authRepository: getIt(),
     ),
   );
-  
-  getIt.registerFactory<ScaleBloc>(
+
+  getIt.registerLazySingleton<ScaleBloc>(
     () => ScaleBloc(
       scanDevicesUseCase: getIt(),
       stopScanUseCase: getIt(),
