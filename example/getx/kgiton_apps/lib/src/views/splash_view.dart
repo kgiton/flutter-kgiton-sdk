@@ -1,13 +1,12 @@
 /// ============================================================================
 /// Splash View
 /// ============================================================================
-/// 
+///
 /// File: src/views/splash_view.dart
 /// Deskripsi: Splash screen dengan KGiTON branding
 /// ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../config/theme.dart';
 
@@ -28,41 +27,52 @@ class SplashView extends StatelessWidget {
               height: 120,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-              padding: const EdgeInsets.all(16),
-              child: SvgPicture.asset(
-                'assets/kgiton_logo.svg',
-                colorFilter: const ColorFilter.mode(
-                  KGiTONColors.primary,
-                  BlendMode.srcIn,
-                ),
+              child: const Icon(
+                Icons.scale,
+                size: 60,
+                color: KGiTONColors.primary,
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // App Name
             const Text(
-              'KGiTON Scale',
+              'KGiTON',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 36,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
+                letterSpacing: 4,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'GetX Example',
+            Text(
+              'Smart Scale Solution',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white70,
+                color: Colors.white.withValues(alpha: 0.8),
+                letterSpacing: 2,
               ),
             ),
             const SizedBox(height: 48),
-            
+
             // Loading
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
             ),
           ],
         ),

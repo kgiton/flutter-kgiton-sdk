@@ -1,16 +1,16 @@
 /// ============================================================================
 /// Auth BLoC - Business Logic Component
 /// ============================================================================
-/// 
+///
 /// File: src/bloc/auth/auth_bloc.dart
 /// Deskripsi: BLoC untuk mengelola logika autentikasi
-/// 
+///
 /// BLoC Pattern:
 /// 1. UI mengirim Event (LoginEvent, RegisterEvent, dll)
 /// 2. BLoC memproses Event di handler
 /// 3. BLoC emit State baru (AuthLoading, AuthAuthenticated, dll)
 /// 4. UI rebuild berdasarkan State baru
-/// 
+///
 /// Keuntungan BLoC:
 /// - Separation of concerns (UI terpisah dari logic)
 /// - Testable (mudah di-unit test)
@@ -28,12 +28,12 @@ import 'auth_event.dart';
 import 'auth_state.dart';
 
 /// AuthBloc - mengelola state autentikasi
-/// 
+///
 /// Cara menggunakan di UI:
 /// ```dart
 /// // Kirim event
 /// context.read<AuthBloc>().add(LoginEvent(email: email, password: password));
-/// 
+///
 /// // Listen state
 /// BlocBuilder<AuthBloc, AuthState>(
 ///   builder: (context, state) {
@@ -46,12 +46,12 @@ import 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // API Service
   KgitonApiService? _apiService;
-  
+
   // Getter untuk API service (digunakan oleh ScaleBloc)
   KgitonApiService? get apiService => _apiService;
-  
+
   /// Constructor
-  /// 
+  ///
   /// Mendaftarkan semua event handlers.
   /// Initial state adalah AuthInitial.
   AuthBloc() : super(AuthInitial()) {
@@ -62,22 +62,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutEvent>(_onLogout);
     on<RefreshUserDataEvent>(_onRefreshUserData);
     on<ClearAuthErrorEvent>(_onClearError);
-    
+
     // Initialize API service
     _initializeApiService();
   }
-  
+
   /// Initialize API service
+  /// TODO: Url base bisa diganti
   void _initializeApiService() {
-    _apiService = KgitonApiService(baseUrl: AppConstants.apiBaseUrl);
+    _apiService = KgitonApiService(baseUrl: AppConstants.apiSandboxUrl);
   }
-  
+
   // ==========================================================================
   // EVENT HANDLERS
   // ==========================================================================
-  
+
   /// Handler untuk CheckAuthStatusEvent
-  /// 
+  ///
   /// Mengecek apakah ada session tersimpan di local storage.
   Future<void> _onCheckAuthStatus(
     CheckAuthStatusEvent event,
@@ -87,17 +88,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final prefs = await SharedPreferences.getInstance();
       final userData = prefs.getString(AppConstants.userDataKey);
       final accessToken = prefs.getString(AppConstants.tokenKey);
-      
+
       if (userData != null && accessToken != null) {
         // Restore user data
         final user = User.fromJson(json.decode(userData));
-        
+
         // Set token ke API service
         _apiService?.setAccessToken(accessToken);
-        
+
         // Load licenses
         final licenses = await _loadUserLicenses();
-        
+
         emit(AuthAuthenticated(
           user: user,
           licenses: licenses,
@@ -111,29 +112,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthUnauthenticated());
     }
   }
-  
+
   /// Handler untuk LoginEvent
-  /// 
+  ///
   /// Proses login dan simpan session jika berhasil.
   Future<void> _onLogin(
     LoginEvent event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     try {
       // Call API login
       final authData = await _apiService!.auth.login(
         email: event.email,
         password: event.password,
       );
-      
+
       // Save session
       await _saveSession(authData);
-      
+
       // Load licenses
       final licenses = await _loadUserLicenses();
-      
+
       emit(AuthAuthenticated(
         user: authData.user,
         licenses: licenses,
@@ -143,16 +144,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthError(message: 'Login gagal: ${_parseError(e)}'));
     }
   }
-  
+
   /// Handler untuk RegisterEvent
-  /// 
+  ///
   /// Proses registrasi dengan license key.
   Future<void> _onRegister(
     RegisterEvent event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     try {
       // Call API register
       final message = await _apiService!.auth.register(
@@ -162,22 +163,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         licenseKey: event.licenseKey,
         referralCode: event.referralCode,
       );
-      
+
       emit(AuthRegistrationSuccess(message: message));
     } catch (e) {
       emit(AuthError(message: 'Register gagal: ${_parseError(e)}'));
     }
   }
-  
+
   /// Handler untuk LogoutEvent
-  /// 
+  ///
   /// Logout dan clear session.
   Future<void> _onLogout(
     LogoutEvent event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
+
     try {
       // Call API logout
       await _apiService?.auth.logout();
@@ -189,18 +190,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthUnauthenticated());
     }
   }
-  
+
   /// Handler untuk RefreshUserDataEvent
   Future<void> _onRefreshUserData(
     RefreshUserDataEvent event,
     Emitter<AuthState> emit,
   ) async {
     if (state is! AuthAuthenticated) return;
-    
+
     try {
       final profile = await _apiService?.user.getProfile();
       final licenses = await _loadUserLicenses();
-      
+
       if (profile != null) {
         // Convert UserProfileData to User for state compatibility
         final user = User(
@@ -222,7 +223,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       debugPrint('Refresh user data error: $e');
     }
   }
-  
+
   /// Handler untuk ClearAuthErrorEvent
   void _onClearError(
     ClearAuthErrorEvent event,
@@ -232,11 +233,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthUnauthenticated());
     }
   }
-  
+
   // ==========================================================================
   // HELPER METHODS
   // ==========================================================================
-  
+
   /// Save session ke local storage
   Future<void> _saveSession(AuthData authData) async {
     final prefs = await SharedPreferences.getInstance();
@@ -246,7 +247,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await prefs.setString(AppConstants.apiKeyKey, authData.user.apiKey);
     }
   }
-  
+
   /// Clear session dari local storage
   Future<void> _clearSession() async {
     final prefs = await SharedPreferences.getInstance();
@@ -254,7 +255,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await prefs.remove(AppConstants.apiKeyKey);
     await prefs.remove(AppConstants.userDataKey);
   }
-  
+
   /// Load user's license keys
   Future<List<LicenseKey>> _loadUserLicenses() async {
     try {
@@ -265,7 +266,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return [];
     }
   }
-  
+
   /// Parse error message
   String _parseError(dynamic error) {
     if (error is Exception) {

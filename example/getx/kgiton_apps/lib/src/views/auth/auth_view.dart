@@ -1,17 +1,16 @@
 /// ============================================================================
 /// Auth View - GetX UI
 /// ============================================================================
-/// 
+///
 /// File: src/views/auth/auth_view.dart
 /// Deskripsi: Halaman login dan register
-/// 
+///
 /// GetX UI Features:
 /// - Obx(() => ...) untuk reactive UI
 /// - Get.find<Controller>() untuk access controller
 /// ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 
 import '../../config/theme.dart';
@@ -50,25 +49,9 @@ class _AuthViewState extends State<AuthView> with SingleTickerProviderStateMixin
             children: [
               const SizedBox(height: 32),
               // Logo
-              SvgPicture.asset(
-                'assets/kgiton_logo.svg',
-                width: 80,
-                height: 80,
-                colorFilter: const ColorFilter.mode(
-                  KGiTONColors.primary,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'KGiTON Scale',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              _buildLogo(),
               const SizedBox(height: 32),
-              
+
               // Tab Bar
               Container(
                 decoration: BoxDecoration(
@@ -92,7 +75,7 @@ class _AuthViewState extends State<AuthView> with SingleTickerProviderStateMixin
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Tab Views
               Expanded(
                 child: TabBarView(
@@ -112,12 +95,38 @@ class _AuthViewState extends State<AuthView> with SingleTickerProviderStateMixin
       ),
     );
   }
+
+  Widget _buildLogo() {
+    return Column(
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: KGiTONColors.primary,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Icon(Icons.scale, size: 40, color: Colors.white),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'KGiTON',
+          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                color: KGiTONColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text('Smart Scale Solution', style: Theme.of(context).textTheme.bodyMedium),
+      ],
+    );
+  }
 }
 
 /// Login Form Widget
 class _LoginForm extends StatelessWidget {
   final AuthController controller;
-  
+
   _LoginForm({required this.controller});
 
   final _formKey = GlobalKey<FormState>();
@@ -149,7 +158,7 @@ class _LoginForm extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Password
           TextFormField(
             controller: _passwordController,
@@ -166,28 +175,28 @@ class _LoginForm extends StatelessWidget {
             },
           ),
           const SizedBox(height: 32),
-          
+
           // Login Button
           // =================================================================
           // Obx - Reactive Widget
           // Akan rebuild otomatis saat isLoading berubah
           // =================================================================
           Obx(() => SizedBox(
-            height: 50,
-            child: ElevatedButton(
-              onPressed: controller.isLoading.value ? null : _onLogin,
-              child: controller.isLoading.value
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text('Login'),
-            ),
-          )),
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: controller.isLoading.value ? null : _onLogin,
+                  child: controller.isLoading.value
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Login'),
+                ),
+              )),
         ],
       ),
     );
@@ -207,7 +216,7 @@ class _LoginForm extends StatelessWidget {
 class _RegisterForm extends StatelessWidget {
   final AuthController controller;
   final VoidCallback? onSuccess;
-  
+
   _RegisterForm({required this.controller, this.onSuccess});
 
   final _formKey = GlobalKey<FormState>();
@@ -238,7 +247,7 @@ class _RegisterForm extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Email
           TextFormField(
             controller: _emailController,
@@ -258,7 +267,7 @@ class _RegisterForm extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Password
           TextFormField(
             controller: _passwordController,
@@ -278,7 +287,7 @@ class _RegisterForm extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Confirm Password
           TextFormField(
             controller: _confirmPasswordController,
@@ -295,7 +304,7 @@ class _RegisterForm extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // License Key
           TextFormField(
             controller: _licenseKeyController,
@@ -311,24 +320,24 @@ class _RegisterForm extends StatelessWidget {
             },
           ),
           const SizedBox(height: 32),
-          
+
           // Register Button
           Obx(() => SizedBox(
-            height: 50,
-            child: ElevatedButton(
-              onPressed: controller.isLoading.value ? null : _onRegister,
-              child: controller.isLoading.value
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text('Register'),
-            ),
-          )),
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: controller.isLoading.value ? null : _onRegister,
+                  child: controller.isLoading.value
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Register'),
+                ),
+              )),
         ],
       ),
     );

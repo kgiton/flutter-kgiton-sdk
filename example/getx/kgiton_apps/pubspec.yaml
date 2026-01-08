@@ -22,15 +22,16 @@ dependencies:
   shared_preferences: ^2.2.2
   get_storage: ^2.1.1
   
-  # UI
+  # UI Components
+  cupertino_icons: ^1.0.6
   google_fonts: ^6.1.0
   flutter_svg: ^2.0.9
   
   # QR Scanner
-  mobile_scanner: ^3.5.5
+  mobile_scanner: ^5.1.1
   
   # Permissions
-  permission_handler: ^11.1.0
+  permission_handler: ^11.3.0
   
   # App Icon
   flutter_launcher_icons: ^0.13.1
