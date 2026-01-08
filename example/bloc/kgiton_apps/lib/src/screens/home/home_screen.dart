@@ -1,7 +1,7 @@
 /// ============================================================================
 /// Home Screen - BLoC Version
 /// ============================================================================
-/// 
+///
 /// Menggunakan BlocBuilder untuk rebuild UI berdasarkan state.
 /// BlocSelector untuk select specific property dari state.
 /// ============================================================================
@@ -43,7 +43,7 @@ class HomeScreen extends StatelessWidget {
   AppBar _buildAppBar(BuildContext context) {
     // Get auth state synchronously for popup menu
     final authState = context.read<AuthBloc>().state;
-    
+
     return AppBar(
       title: const Text('KGiTON Scale'),
       actions: [
@@ -123,7 +123,7 @@ class HomeScreen extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is! AuthAuthenticated) return const SizedBox.shrink();
-        
+
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -164,7 +164,7 @@ class HomeScreen extends StatelessWidget {
     return BlocBuilder<ScaleBloc, ScaleState>(
       builder: (context, state) {
         final isConnected = state.isConnected;
-        
+
         return Card(
           color: isConnected ? KGiTONColors.primary : null,
           child: Padding(
@@ -180,9 +180,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isConnected 
-                        ? 'Terhubung: ${state.connectedDevice?.name ?? "Device"}'
-                        : 'Tidak Terhubung',
+                      isConnected ? 'Terhubung: ${state.connectedDevice?.name ?? "Device"}' : 'Tidak Terhubung',
                       style: TextStyle(
                         color: isConnected ? Colors.white : KGiTONColors.textSecondaryLight,
                       ),
@@ -210,9 +208,7 @@ class HomeScreen extends StatelessWidget {
                     builder: (context, authState) {
                       return OutlinedButton.icon(
                         onPressed: () {
-                          final licenseKey = authState is AuthAuthenticated 
-                            ? authState.primaryLicenseKey 
-                            : null;
+                          final licenseKey = authState is AuthAuthenticated ? authState.primaryLicenseKey : null;
                           context.read<ScaleBloc>().add(DisconnectEvent(licenseKey: licenseKey));
                         },
                         icon: const Icon(Icons.link_off, color: Colors.white),
@@ -233,7 +229,7 @@ class HomeScreen extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is! AuthAuthenticated) return const SizedBox.shrink();
-        
+
         final licenses = state.licenses;
         if (licenses.isEmpty) {
           return const Card(
@@ -249,7 +245,7 @@ class HomeScreen extends StatelessWidget {
             ),
           );
         }
-        
+
         final license = licenses.first;
         return Card(
           child: Padding(
@@ -266,9 +262,7 @@ class HomeScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: license.isActive 
-                          ? KGiTONColors.success.withValues(alpha: 0.2)
-                          : KGiTONColors.warning.withValues(alpha: 0.2),
+                        color: license.isActive ? KGiTONColors.success.withValues(alpha: 0.2) : KGiTONColors.warning.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -307,7 +301,7 @@ class HomeScreen extends StatelessWidget {
     return BlocBuilder<ScaleBloc, ScaleState>(
       builder: (context, state) {
         if (!state.isConnected) return const SizedBox.shrink();
-        
+
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -351,7 +345,7 @@ class HomeScreen extends StatelessWidget {
     return BlocBuilder<ScaleBloc, ScaleState>(
       builder: (context, state) {
         if (state.isConnected) return const SizedBox.shrink();
-        
+
         return FloatingActionButton.extended(
           onPressed: () => _navigateToDeviceScreen(context),
           icon: const Icon(Icons.bluetooth_searching),

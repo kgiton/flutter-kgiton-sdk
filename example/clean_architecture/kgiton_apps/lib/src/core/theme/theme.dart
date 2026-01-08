@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class KGiTONColors {
   KGiTONColors._();
-  
+
   static const Color primary = Color(0xFF2E7D32);
   static const Color primaryLight = Color(0xFF4CAF50);
   static const Color primaryDark = Color(0xFF1B5E20);
@@ -24,7 +24,7 @@ class KGiTONColors {
 
 class KGiTONTheme {
   KGiTONTheme._();
-  
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -42,7 +42,9 @@ class KGiTONTheme {
         elevation: 0,
         centerTitle: true,
         titleTextStyle: GoogleFonts.poppins(
-          fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
         ),
       ),
       cardTheme: CardThemeData(
@@ -74,7 +76,7 @@ class KGiTONTheme {
       textTheme: GoogleFonts.poppinsTextTheme(),
     );
   }
-  
+
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
@@ -92,7 +94,9 @@ class KGiTONTheme {
         elevation: 0,
         centerTitle: true,
         titleTextStyle: GoogleFonts.poppins(
-          fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
         ),
       ),
       textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
