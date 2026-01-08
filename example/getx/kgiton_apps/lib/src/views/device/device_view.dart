@@ -347,13 +347,13 @@ class _DeviceViewState extends State<DeviceView> {
   }
 
   Widget _buildConnectingState(ScaleController controller) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 24),
-          const Text(
+          CircularProgressIndicator(),
+          SizedBox(height: 24),
+          Text(
             'Connecting...',
             style: TextStyle(fontSize: 16),
           ),

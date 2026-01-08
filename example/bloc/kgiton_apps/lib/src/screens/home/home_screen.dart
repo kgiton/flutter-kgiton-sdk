@@ -236,14 +236,14 @@ class HomeScreen extends StatelessWidget {
         
         final licenses = state.licenses;
         if (licenses.isEmpty) {
-          return Card(
+          return const Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 children: [
-                  const Icon(Icons.warning_amber, size: 48, color: KGiTONColors.warning),
-                  const SizedBox(height: 8),
-                  const Text('Belum ada license key'),
+                  Icon(Icons.warning_amber, size: 48, color: KGiTONColors.warning),
+                  SizedBox(height: 8),
+                  Text('Belum ada license key'),
                 ],
               ),
             ),

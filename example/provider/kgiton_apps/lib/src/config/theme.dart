@@ -70,7 +70,7 @@ class KGiTONTheme {
       brightness: Brightness.light,
       
       // Color Scheme
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: KGiTONColors.primary,
         secondary: KGiTONColors.secondary,
         surface: KGiTONColors.surfaceLight,
@@ -223,7 +223,7 @@ class KGiTONTheme {
       brightness: Brightness.dark,
       
       // Color Scheme
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: KGiTONColors.primaryLight,
         secondary: KGiTONColors.secondaryLight,
         surface: KGiTONColors.surfaceDark,

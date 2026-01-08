@@ -34,7 +34,7 @@ class KGiTONTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: KGiTONColors.primary,
         secondary: KGiTONColors.secondary,
         surface: KGiTONColors.surfaceLight,
@@ -86,7 +86,7 @@ class KGiTONTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: KGiTONColors.primaryLight,
         secondary: KGiTONColors.secondaryLight,
         surface: KGiTONColors.surfaceDark,
