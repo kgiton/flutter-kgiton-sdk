@@ -9,12 +9,46 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kgiton_sdk/kgiton_sdk.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../config/theme.dart';
 import '../../controllers/scale_controller.dart';
 
-class DeviceView extends StatelessWidget {
+class DeviceView extends StatefulWidget {
   const DeviceView({super.key});
+
+  @override
+  State<DeviceView> createState() => _DeviceViewState();
+}
+
+class _DeviceViewState extends State<DeviceView> {
+  late TextEditingController _licenseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _licenseController = TextEditingController();
+
+    // Auto-fill dengan license key dari arguments atau dari controller
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = Get.find<ScaleController>();
+
+      // Prioritas: arguments > existing value in controller
+      if (Get.arguments != null && Get.arguments['licenseKey'] != null) {
+        final licenseKey = Get.arguments['licenseKey'] as String;
+        controller.licenseKey.value = licenseKey;
+        _licenseController.text = licenseKey;
+      } else if (controller.licenseKey.value.isNotEmpty) {
+        _licenseController.text = controller.licenseKey.value;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _licenseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +58,17 @@ class DeviceView extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Connect Device'),
         actions: [
+          // QR Scan button
+          Obx(() {
+            if (!controller.isConnected.value) {
+              return IconButton(
+                icon: const Icon(Icons.qr_code_scanner),
+                onPressed: _scanQRCode,
+                tooltip: 'Scan QR License',
+              );
+            }
+            return const SizedBox.shrink();
+          }),
           Obx(() {
             if (controller.isConnected.value) {
               return IconButton(
@@ -36,49 +81,104 @@ class DeviceView extends StatelessWidget {
           }),
         ],
       ),
-      body: Column(
-        children: [
-          // License Key Info
-          Obx(() => Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                color: KGiTONColors.primary.withValues(alpha: 0.1),
-                child: Row(
-                  children: [
-                    const Icon(Icons.vpn_key, color: KGiTONColors.primary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'License Key',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          Text(
-                            controller.licenseKey.value,
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Column(
+          children: [
+            // License Key Input
+            Obx(() {
+              if (!controller.isConnected.value) {
+                return _buildLicenseInput(controller);
+              }
+              return _buildLicenseInfo(controller);
+            }),
 
-          // Main Content
-          Expanded(
-            child: Obx(() => _buildStateContent(controller)),
+            // Main Content
+            Expanded(
+              child: Obx(() => _buildStateContent(controller)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build license key input section
+  Widget _buildLicenseInput(ScaleController controller) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: KGiTONColors.primary.withValues(alpha: 0.1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('License Key', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _licenseController,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
+            onChanged: (value) => controller.licenseKey.value = value,
+            decoration: InputDecoration(
+              hintText: 'XXXX-XXXX-XXXX-XXXX',
+              prefixIcon: const Icon(Icons.vpn_key),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.qr_code_scanner),
+                onPressed: _scanQRCode,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  /// Build license key info (when connected)
+  Widget _buildLicenseInfo(ScaleController controller) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      color: KGiTONColors.primary.withValues(alpha: 0.1),
+      child: Row(
+        children: [
+          const Icon(Icons.vpn_key, color: KGiTONColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'License Key',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                Text(
+                  controller.licenseKey.value,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Scan QR code untuk license key
+  Future<void> _scanQRCode() async {
+    final result = await Get.to<String>(() => const _QRScannerScreen());
+
+    if (result != null) {
+      _licenseController.text = result;
+      Get.find<ScaleController>().licenseKey.value = result;
+    }
   }
 
   Widget _buildStateContent(ScaleController controller) {
@@ -358,6 +458,76 @@ class DeviceView extends StatelessWidget {
                 foregroundColor: KGiTONColors.error,
                 side: const BorderSide(color: KGiTONColors.error),
                 padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// QR Scanner screen untuk scan license key
+class _QRScannerScreen extends StatefulWidget {
+  const _QRScannerScreen();
+
+  @override
+  State<_QRScannerScreen> createState() => _QRScannerScreenState();
+}
+
+class _QRScannerScreenState extends State<_QRScannerScreen> {
+  bool _hasScanned = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Scan License Key')),
+      body: Stack(
+        children: [
+          MobileScanner(
+            onDetect: (capture) {
+              if (_hasScanned) return;
+
+              final List<Barcode> barcodes = capture.barcodes;
+              for (final barcode in barcodes) {
+                if (barcode.rawValue != null) {
+                  _hasScanned = true;
+                  Get.back(result: barcode.rawValue);
+                  return;
+                }
+              }
+            },
+          ),
+
+          // Scan overlay
+          Center(
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                border: Border.all(color: KGiTONColors.primary, width: 3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+
+          // Instructions
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Text(
+              'Arahkan kamera ke QR Code\nLicense Key',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
             ),
           ),

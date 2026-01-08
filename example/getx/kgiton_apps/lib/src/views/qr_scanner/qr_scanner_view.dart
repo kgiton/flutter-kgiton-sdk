@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../config/theme.dart';
 import '../../config/routes.dart';
@@ -20,9 +21,7 @@ class QRScannerView extends StatefulWidget {
 }
 
 class _QRScannerViewState extends State<QRScannerView> {
-  // MobileScannerController dari package mobile_scanner
-  // final MobileScannerController _controller = MobileScannerController();
-  bool _isProcessing = false;
+  bool _hasScanned = false;
 
   @override
   Widget build(BuildContext context) {
@@ -32,58 +31,20 @@ class _QRScannerViewState extends State<QRScannerView> {
       ),
       body: Stack(
         children: [
-          // Placeholder untuk MobileScanner
-          // Uncomment dan gunakan MobileScanner dari package mobile_scanner
-          /*
+          // MobileScanner untuk scan QR code
           MobileScanner(
-            controller: _controller,
             onDetect: (capture) {
-              final barcodes = capture.barcodes;
+              if (_hasScanned) return;
+
+              final List<Barcode> barcodes = capture.barcodes;
               for (final barcode in barcodes) {
-                if (!_isProcessing && barcode.rawValue != null) {
+                if (barcode.rawValue != null) {
+                  _hasScanned = true;
                   _processQR(barcode.rawValue!);
+                  return;
                 }
               }
             },
-          ),
-          */
-
-          // Demo view - ganti dengan MobileScanner
-          Container(
-            color: Colors.black,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.qr_code_scanner,
-                    size: 120,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'QR Scanner',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Arahkan kamera ke QR code license',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Demo button untuk simulasi scan
-                  ElevatedButton(
-                    onPressed: () => _processQR('DEMO-LICENSE-KEY-12345'),
-                    child: const Text('Demo: Scan QR'),
-                  ),
-                ],
-              ),
-            ),
           ),
 
           // Scan overlay
@@ -93,7 +54,28 @@ class _QRScannerViewState extends State<QRScannerView> {
               height: 250,
               decoration: BoxDecoration(
                 border: Border.all(color: KGiTONColors.primary, width: 3),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+
+          // Instructions
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Text(
+              'Arahkan kamera ke QR Code\nLicense Key',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
             ),
           ),
@@ -103,20 +85,11 @@ class _QRScannerViewState extends State<QRScannerView> {
   }
 
   void _processQR(String data) {
-    if (_isProcessing) return;
-    setState(() => _isProcessing = true);
-
     // Navigate ke device screen dengan GetX
     // Menggunakan Get.offNamed untuk replace current route
     Get.offNamed(
       AppRoutes.device,
       arguments: {'licenseKey': data},
     );
-  }
-
-  @override
-  void dispose() {
-    // _controller.dispose();
-    super.dispose();
   }
 }

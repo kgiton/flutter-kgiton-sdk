@@ -3,7 +3,7 @@
 /// ============================================================================
 ///
 /// File: src/views/home/home_view.dart
-/// Deskripsi: Home screen dengan user info dan license list
+/// Deskripsi: Home screen dengan user info, weight display, dan license list
 /// ============================================================================
 
 import 'package:flutter/material.dart';
@@ -14,6 +14,7 @@ import '../../config/theme.dart';
 import '../../config/routes.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/home_controller.dart';
+import '../../controllers/scale_controller.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -22,6 +23,7 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
     final homeController = Get.find<HomeController>();
+    final scaleController = Get.find<ScaleController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -40,6 +42,14 @@ class HomeView extends StatelessWidget {
               children: [
                 // User Info Card
                 _buildUserCard(authController),
+                const SizedBox(height: 16),
+
+                // Weight Display Card
+                _buildWeightCard(scaleController, authController),
+                const SizedBox(height: 16),
+
+                // Device Control Card (jika connected)
+                _buildDeviceControlCard(scaleController),
                 const SizedBox(height: 24),
 
                 // Licenses Section
@@ -67,6 +77,7 @@ class HomeView extends StatelessWidget {
               ],
             )),
       ),
+      floatingActionButton: _buildFAB(scaleController),
     );
   }
 
@@ -202,6 +213,144 @@ class HomeView extends StatelessWidget {
               ),
       ),
     );
+  }
+
+  /// Weight display card
+  Widget _buildWeightCard(ScaleController scaleController, AuthController authController) {
+    return Obx(() {
+      final isConnected = scaleController.isConnected.value;
+
+      return Card(
+        color: isConnected ? KGiTONColors.primary : null,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              // Connection status
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+                    color: isConnected ? Colors.white : Colors.grey,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isConnected ? 'Terhubung: ${scaleController.connectedDevice.value?.name ?? "Device"}' : 'Tidak Terhubung',
+                    style: TextStyle(
+                      color: isConnected ? Colors.white : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Weight display
+              Text(
+                isConnected ? scaleController.currentWeight.value.toStringAsFixed(2) : '0.00',
+                style: TextStyle(
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  color: isConnected ? Colors.white : Colors.black87,
+                ),
+              ),
+              Text(
+                'kg',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: isConnected ? Colors.white70 : Colors.grey,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Connect/Disconnect button
+              if (!isConnected)
+                OutlinedButton.icon(
+                  onPressed: () => Get.toNamed(AppRoutes.device),
+                  icon: const Icon(Icons.search),
+                  label: const Text('Cari Device'),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: () => scaleController.disconnectDevice(),
+                  icon: const Icon(Icons.link_off, color: Colors.white),
+                  label: const Text('Disconnect', style: TextStyle(color: Colors.white)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  /// Device control card
+  Widget _buildDeviceControlCard(ScaleController scaleController) {
+    return Obx(() {
+      if (!scaleController.isConnected.value) {
+        return const SizedBox.shrink();
+      }
+
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.tune, color: KGiTONColors.primary),
+                  SizedBox(width: 8),
+                  Text(
+                    'Device Control',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: scaleController.triggerBuzzer,
+                    icon: const Icon(Icons.notifications_active, size: 18),
+                    label: const Text('BEEP'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: scaleController.triggerBuzzer,
+                    icon: const Icon(Icons.vibration, size: 18),
+                    label: const Text('BUZZ'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  /// Build FAB untuk scan device
+  Widget _buildFAB(ScaleController scaleController) {
+    return Obx(() {
+      if (scaleController.isConnected.value) {
+        return const SizedBox.shrink();
+      }
+
+      return FloatingActionButton.extended(
+        onPressed: () => Get.toNamed(AppRoutes.device),
+        icon: const Icon(Icons.bluetooth_searching),
+        label: const Text('Scan Device'),
+      );
+    });
   }
 
   void _navigateToDevice(String licenseKey) {
