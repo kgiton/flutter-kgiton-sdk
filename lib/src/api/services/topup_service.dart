@@ -177,4 +177,36 @@ class KgitonTopupService {
 
     return true;
   }
+
+  /// Sync transaction status with payment gateway
+  ///
+  /// Polls the payment gateway (Winpay) for real-time payment status and
+  /// updates the database accordingly. Useful when webhook callbacks are not received.
+  ///
+  /// [transactionId] - The transaction ID to sync
+  ///
+  /// Returns [SyncTransactionResponse] with sync result
+  ///
+  /// Supported payment methods:
+  /// - QRIS: Uses qr-mpm-query API
+  /// - Virtual Account: Uses transfer-va/inquiry API
+  ///
+  /// Note: Checkout page payments cannot be polled - must rely on webhook callback.
+  ///
+  /// Throws:
+  /// - [KgitonNotFoundException] if transaction not found
+  /// - [KgitonApiException] for other errors
+  Future<SyncTransactionResponse> syncTransactionStatus(String transactionId) async {
+    final response = await _client.post<SyncTransactionResponse>(
+      KgitonApiEndpoints.syncTransactionStatus(transactionId),
+      requiresAuth: false,
+      fromJsonT: (json) => SyncTransactionResponse.fromJson(json as Map<String, dynamic>),
+    );
+
+    if (!response.success || response.data == null) {
+      throw KgitonApiException(message: 'Failed to sync transaction status: ${response.message}');
+    }
+
+    return response.data!;
+  }
 }

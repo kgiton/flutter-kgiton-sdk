@@ -142,6 +142,22 @@ class TopupRequest {
   }
 }
 
+/// QRIS payment info
+class QRISInfo {
+  final String? qrString;
+  final String? qrImageUrl;
+
+  QRISInfo({this.qrString, this.qrImageUrl});
+
+  factory QRISInfo.fromJson(Map<String, dynamic> json) {
+    return QRISInfo(qrString: json['qr_string'] as String?, qrImageUrl: json['qr_image_url'] as String?);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {if (qrString != null) 'qr_string': qrString, if (qrImageUrl != null) 'qr_image_url': qrImageUrl};
+  }
+}
+
 /// Topup response model
 class TopupResponse {
   final String transactionId;
@@ -154,6 +170,8 @@ class TopupResponse {
   final String? gatewayProvider;
   final String? paymentUrl;
   final VirtualAccountInfo? virtualAccount;
+  final QRISInfo? qris;
+  final String? gatewayTransactionId;
   final DateTime? expiresAt;
 
   TopupResponse({
@@ -167,6 +185,8 @@ class TopupResponse {
     this.gatewayProvider,
     this.paymentUrl,
     this.virtualAccount,
+    this.qris,
+    this.gatewayTransactionId,
     this.expiresAt,
   });
 
@@ -182,6 +202,8 @@ class TopupResponse {
       gatewayProvider: json['gateway_provider'] as String?,
       paymentUrl: json['payment_url'] as String?,
       virtualAccount: json['virtual_account'] != null ? VirtualAccountInfo.fromJson(json['virtual_account'] as Map<String, dynamic>) : null,
+      qris: json['qris'] != null ? QRISInfo.fromJson(json['qris'] as Map<String, dynamic>) : null,
+      gatewayTransactionId: json['gateway_transaction_id'] as String?,
       expiresAt: json['expires_at'] != null ? DateTime.parse(json['expires_at'] as String) : null,
     );
   }
@@ -198,6 +220,8 @@ class TopupResponse {
       if (gatewayProvider != null) 'gateway_provider': gatewayProvider,
       if (paymentUrl != null) 'payment_url': paymentUrl,
       if (virtualAccount != null) 'virtual_account': virtualAccount!.toJson(),
+      if (qris != null) 'qris': qris!.toJson(),
+      if (gatewayTransactionId != null) 'gateway_transaction_id': gatewayTransactionId,
       if (expiresAt != null) 'expires_at': expiresAt!.toIso8601String(),
     };
   }
@@ -207,6 +231,12 @@ class TopupResponse {
 
   /// Check if payment uses virtual account
   bool get isVirtualAccount => virtualAccount != null;
+
+  /// Check if payment uses QRIS
+  bool get isQRIS => paymentMethod == 'qris' || qris != null;
+
+  /// Get QRIS image URL if available
+  String? get qrisImageUrl => qris?.qrImageUrl;
 }
 
 /// Virtual account info
@@ -255,27 +285,62 @@ class PaymentMethodInfo {
   }
 }
 
-/// Transaction status check response
+/// Transaction status check response (supports both topup and license transactions)
 class TransactionStatusResponse {
   final String transactionId;
+  final String type; // 'topup', 'license_purchase', or 'license_rental'
   final double amount;
-  final int tokensAdded;
+  final int? tokensAdded; // Only for topup
+  final int? tokensRequested; // Only for topup
+  final String? licenseKey; // Only for license transactions
   final String status;
+  final DateTime createdAt;
 
-  TransactionStatusResponse({required this.transactionId, required this.amount, required this.tokensAdded, required this.status});
+  TransactionStatusResponse({
+    required this.transactionId,
+    required this.type,
+    required this.amount,
+    this.tokensAdded,
+    this.tokensRequested,
+    this.licenseKey,
+    required this.status,
+    required this.createdAt,
+  });
 
   factory TransactionStatusResponse.fromJson(Map<String, dynamic> json) {
     return TransactionStatusResponse(
       transactionId: json['transaction_id'] as String,
+      type: (json['type'] as String?) ?? 'topup',
       amount: ((json['amount'] as num?) ?? 0).toDouble(),
-      tokensAdded: (json['tokens_added'] as int?) ?? 0,
+      tokensAdded: json['tokens_added'] as int?,
+      tokensRequested: json['tokens_requested'] as int?,
+      licenseKey: json['license_key'] as String?,
       status: (json['status'] as String?) ?? 'PENDING',
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'transaction_id': transactionId, 'amount': amount, 'tokens_added': tokensAdded, 'status': status};
+    return {
+      'transaction_id': transactionId,
+      'type': type,
+      'amount': amount,
+      if (tokensAdded != null) 'tokens_added': tokensAdded,
+      if (tokensRequested != null) 'tokens_requested': tokensRequested,
+      if (licenseKey != null) 'license_key': licenseKey,
+      'status': status,
+      'created_at': createdAt.toIso8601String(),
+    };
   }
+
+  /// Check if this is a topup transaction
+  bool get isTopup => type == 'topup';
+
+  /// Check if this is a license purchase transaction
+  bool get isLicensePurchase => type == 'license_purchase';
+
+  /// Check if this is a license rental transaction
+  bool get isLicenseRental => type == 'license_rental';
 
   /// Check if payment is successful
   bool get isSuccess => status == 'SUCCESS' || status == 'success';
@@ -288,4 +353,51 @@ class TransactionStatusResponse {
 
   /// Check if payment is cancelled
   bool get isCancelled => status == 'CANCELLED' || status == 'cancelled';
+}
+
+/// Sync transaction status response
+class SyncTransactionResponse {
+  final String transactionId;
+  final String status;
+  final String? previousStatus;
+  final String paymentMethod;
+  final bool updated;
+  final String? gatewayStatus;
+
+  SyncTransactionResponse({
+    required this.transactionId,
+    required this.status,
+    this.previousStatus,
+    required this.paymentMethod,
+    required this.updated,
+    this.gatewayStatus,
+  });
+
+  factory SyncTransactionResponse.fromJson(Map<String, dynamic> json) {
+    return SyncTransactionResponse(
+      transactionId: (json['transaction_id'] as String?) ?? '',
+      status: (json['status'] as String?) ?? '',
+      previousStatus: json['previous_status'] as String?,
+      paymentMethod: (json['payment_method'] as String?) ?? '',
+      updated: (json['updated'] as bool?) ?? false,
+      gatewayStatus: json['gateway_status'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'transaction_id': transactionId,
+      'status': status,
+      if (previousStatus != null) 'previous_status': previousStatus,
+      'payment_method': paymentMethod,
+      'updated': updated,
+      if (gatewayStatus != null) 'gateway_status': gatewayStatus,
+    };
+  }
+
+  /// Check if status was updated
+  bool get wasUpdated => updated;
+
+  /// Check if payment is now successful
+  bool get isNowSuccess => status == 'success' || status == 'SUCCESS';
 }

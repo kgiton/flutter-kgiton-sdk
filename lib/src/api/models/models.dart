@@ -6,3 +6,4 @@ export 'auth_models.dart';
 export 'license_models.dart';
 export 'topup_models.dart';
 export 'license_transaction_models.dart';
+export 'partner_payment_models.dart';

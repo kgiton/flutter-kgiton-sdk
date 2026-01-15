@@ -4,6 +4,7 @@ import 'services/user_service.dart';
 import 'services/license_service.dart';
 import 'services/topup_service.dart';
 import 'services/license_transaction_service.dart';
+import 'services/partner_payment_service.dart';
 
 /// Main API Service for KGiTON SDK
 ///
@@ -13,6 +14,7 @@ import 'services/license_transaction_service.dart';
 /// - License (validate license)
 /// - Top-up (purchase tokens)
 /// - License Transactions (purchase/subscription)
+/// - Partner Payment (generate QRIS/checkout page for partner transactions)
 ///
 /// Example usage:
 /// ```dart
@@ -35,6 +37,13 @@ import 'services/license_transaction_service.dart';
 ///   tokenCount: 100,
 ///   licenseKey: 'LICENSE-KEY-123',
 /// );
+///
+/// // Generate partner payment (QRIS)
+/// final payment = await apiService.partnerPayment.generateQris(
+///   transactionId: 'TRX-001',
+///   amount: 50000,
+///   licenseKey: 'LICENSE-KEY-123',
+/// );
 /// ```
 class KgitonApiService {
   final KgitonApiClient _client;
@@ -44,6 +53,7 @@ class KgitonApiService {
   late final KgitonLicenseService license;
   late final KgitonTopupService topup;
   late final KgitonLicenseTransactionService licenseTransaction;
+  late final KgitonPartnerPaymentService partnerPayment;
 
   KgitonApiService({required String baseUrl, String? accessToken, String? apiKey})
     : _client = KgitonApiClient(baseUrl: baseUrl, accessToken: accessToken, apiKey: apiKey) {
@@ -61,6 +71,7 @@ class KgitonApiService {
     license = KgitonLicenseService(_client);
     topup = KgitonTopupService(_client);
     licenseTransaction = KgitonLicenseTransactionService(_client);
+    partnerPayment = KgitonPartnerPaymentService(_client);
   }
 
   /// Get the underlying API client

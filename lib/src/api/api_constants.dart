@@ -124,6 +124,18 @@ class KgitonApiEndpoints {
   /// POST /api/topup/cancel/{transaction_id}
   static String cancelTransaction(String transactionId) => '/topup/cancel/$transactionId';
 
+  /// Sync transaction status with payment gateway
+  /// POST /api/topup/sync/{transaction_id}
+  static String syncTransactionStatus(String transactionId) => '/topup/sync/$transactionId';
+
+  // ============================================================================
+  // PARTNER PAYMENT ENDPOINTS
+  // ============================================================================
+
+  /// Generate partner payment (QRIS or Checkout Page)
+  /// POST /api/partner/payment/generate
+  static const String partnerPaymentGenerate = '/partner/payment/generate';
+
   // ============================================================================
   // LICENSE TRANSACTION ENDPOINTS (User)
   // ============================================================================

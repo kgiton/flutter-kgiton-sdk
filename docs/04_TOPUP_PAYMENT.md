@@ -359,31 +359,70 @@ Future<void> calculatePaymentTotal() async {
 
 ## 📝 Data Models
 
-### TopupTransaction
-
-```dart
-class TopupTransaction {
-  final String id;
-  final String licenseKey;
-  final int tokenCount;
-  final int amount;
-  final String paymentMethod;
-  final String status;          // pending, completed, failed, expired, cancelled
-  final VirtualAccountInfo? virtualAccount;
-  final String? qrisUrl;
-  final DateTime? expiresAt;
-  final DateTime? paidAt;
-  final DateTime createdAt;
-}
-```
-
 ### TopupResponse
 
 ```dart
 class TopupResponse {
-  final String message;
-  final TopupTransaction transaction;
-  final String? checkoutPageUrl;  // For checkout_page method
+  final String transactionId;
+  final String licenseKey;
+  final int tokensRequested;
+  final double amountToPay;
+  final double pricePerToken;
+  final String status;
+  final String? paymentMethod;      // checkout_page, va_bri, va_bni, qris, dll
+  final String? gatewayProvider;
+  final String? paymentUrl;          // For checkout_page method
+  final VirtualAccountInfo? virtualAccount;
+  final QRISInfo? qris;              // For QRIS payment
+  final String? gatewayTransactionId;
+  final DateTime? expiresAt;
+
+  // Helper methods
+  bool get isCheckoutPage => paymentMethod == 'checkout_page';
+  bool get isVirtualAccount => virtualAccount != null;
+  bool get isQRIS => paymentMethod == 'qris' || qris != null;
+  String? get qrisImageUrl => qris?.qrImageUrl;
+}
+```
+
+### VirtualAccountInfo
+
+```dart
+class VirtualAccountInfo {
+  final String number;
+  final String name;
+  final String bank;
+}
+```
+
+### QRISInfo
+
+```dart
+class QRISInfo {
+  final String? qrString;     // QRIS string untuk generate QR
+  final String? qrImageUrl;   // URL gambar QR code
+}
+```
+
+### TransactionStatusResponse
+
+```dart
+class TransactionStatusResponse {
+  final String transactionId;
+  final String type;           // 'topup', 'license_purchase', 'license_rental'
+  final double amount;
+  final int? tokensAdded;      // Only for topup
+  final int? tokensRequested;  // Only for topup
+  final String? licenseKey;    // Only for license transactions
+  final String status;
+  final DateTime createdAt;
+
+  // Helper methods
+  bool get isTopup => type == 'topup';
+  bool get isLicensePurchase => type == 'license_purchase';
+  bool get isLicenseRental => type == 'license_rental';
+  bool get isSuccess => status == 'SUCCESS' || status == 'success';
+  bool get isPending => status == 'PENDING' || status == 'pending';
 }
 ```
 
@@ -391,13 +430,11 @@ class TopupResponse {
 
 ```dart
 class PaymentMethodInfo {
-  final String code;        // va_bca, qris, checkout_page
-  final String displayName; // Virtual Account BCA
-  final String category;    // virtual_account, qris, checkout
-  final int fee;            // Fee in rupiah
-  final String feeFormatted;// Rp 4.000
-  final int minAmount;
-  final int maxAmount;
+  final String id;          // va_bca, qris, checkout_page
+  final String name;        // Virtual Account BCA
+  final String? description;
+  final String type;        // 'checkout', 'va', atau 'qris'
+  final bool enabled;
 }
 ```
 
@@ -462,6 +499,40 @@ class _TopupPageState extends State<TopupPage> {
   }
 }
 ```
+
+---
+
+## Sync Transaction Status
+
+Untuk polling status transaksi secara langsung dari payment gateway (berguna jika webhook tidak diterima):
+
+```dart
+Future<void> syncTransaction(String transactionId) async {
+  try {
+    final result = await api.topup.syncTransactionStatus(transactionId);
+    
+    print('🔄 Sync Result');
+    print('==============');
+    print('Transaction ID: ${result.transactionId}');
+    print('Status: ${result.status}');
+    print('Previous Status: ${result.previousStatus}');
+    print('Was Updated: ${result.wasUpdated}');
+    
+    if (result.wasUpdated && result.isNowSuccess) {
+      print('✅ Payment confirmed!');
+      // Refresh token balance
+      await refreshTokenBalance();
+    }
+    
+  } on KgitonApiException catch (e) {
+    print('❌ Error: ${e.message}');
+  }
+}
+```
+
+**Catatan:**
+- Hanya mendukung QRIS dan Virtual Account
+- Checkout page tidak bisa di-poll (harus menunggu webhook)
 
 ---
 

@@ -16,6 +16,7 @@ Selamat datang di dokumentasi KGiTON Flutter SDK. Panduan ini akan membantu Anda
 | 6 | [API Reference](06_API_REFERENCE.md) | Referensi lengkap semua API |
 | 7 | [Troubleshooting](07_TROUBLESHOOTING.md) | Masalah umum dan solusinya |
 | 8 | [Connection Sequence Diagram](08_CONNECTION_SEQUENCE_DIAGRAM.md) | Diagram alur koneksi ke timbangan |
+| 9 | [Partner Payment](09_PARTNER_PAYMENT.md) | Generate pembayaran QRIS/Checkout untuk partner |
 
 ---
 
@@ -46,7 +47,8 @@ KGiTON SDK
 │   ├── KgitonUserService     (User & token operations)
 │   ├── KgitonLicenseService  (License validation)
 │   ├── KgitonTopupService    (Token top-up)
-│   └── KgitonLicenseTransactionService (Purchase/subscription)
+│   ├── KgitonLicenseTransactionService (Purchase/subscription)
+│   └── KgitonPartnerPaymentService (Partner payment generation)
 │
 ├── BLE Integration
 │   ├── KgitonScaleService    (Scale connection & control)

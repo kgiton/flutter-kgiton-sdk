@@ -196,6 +196,8 @@ class InitiatePaymentResponse {
   final String? vaNumber;
   final String? vaName;
   final String? vaBank;
+  final QRISPaymentInfo? qris;
+  final BillingPeriod? billingPeriod;
   final DateTime? expiresAt;
 
   InitiatePaymentResponse({
@@ -210,6 +212,8 @@ class InitiatePaymentResponse {
     this.vaNumber,
     this.vaName,
     this.vaBank,
+    this.qris,
+    this.billingPeriod,
     this.expiresAt,
   });
 
@@ -226,6 +230,8 @@ class InitiatePaymentResponse {
       vaNumber: json['va_number'] as String?,
       vaName: json['va_name'] as String?,
       vaBank: json['va_bank'] as String?,
+      qris: json['qris'] != null ? QRISPaymentInfo.fromJson(json['qris'] as Map<String, dynamic>) : null,
+      billingPeriod: json['billing_period'] != null ? BillingPeriod.fromJson(json['billing_period'] as Map<String, dynamic>) : null,
       expiresAt: json['expires_at'] != null ? DateTime.parse(json['expires_at'] as String) : null,
     );
   }
@@ -243,6 +249,8 @@ class InitiatePaymentResponse {
       if (vaNumber != null) 'va_number': vaNumber,
       if (vaName != null) 'va_name': vaName,
       if (vaBank != null) 'va_bank': vaBank,
+      if (qris != null) 'qris': qris!.toJson(),
+      if (billingPeriod != null) 'billing_period': billingPeriod!.toJson(),
       if (expiresAt != null) 'expires_at': expiresAt!.toIso8601String(),
     };
   }
@@ -252,6 +260,41 @@ class InitiatePaymentResponse {
 
   /// Check if payment uses virtual account
   bool get isVirtualAccount => vaNumber != null && vaNumber!.isNotEmpty;
+
+  /// Check if payment uses QRIS
+  bool get isQRIS => qris != null;
+}
+
+/// QRIS payment info for license transactions
+class QRISPaymentInfo {
+  final String? qrString;
+  final String? qrImageUrl;
+
+  QRISPaymentInfo({this.qrString, this.qrImageUrl});
+
+  factory QRISPaymentInfo.fromJson(Map<String, dynamic> json) {
+    return QRISPaymentInfo(qrString: json['qr_string'] as String?, qrImageUrl: json['qr_image_url'] as String?);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {if (qrString != null) 'qr_string': qrString, if (qrImageUrl != null) 'qr_image_url': qrImageUrl};
+  }
+}
+
+/// Billing period for subscription transactions
+class BillingPeriod {
+  final DateTime start;
+  final DateTime end;
+
+  BillingPeriod({required this.start, required this.end});
+
+  factory BillingPeriod.fromJson(Map<String, dynamic> json) {
+    return BillingPeriod(start: DateTime.parse(json['start'] as String), end: DateTime.parse(json['end'] as String));
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'start': start.toIso8601String(), 'end': end.toIso8601String()};
+  }
 }
 
 /// License status summary (admin)

@@ -6,3 +6,4 @@ export 'user_service.dart';
 export 'license_service.dart';
 export 'topup_service.dart';
 export 'license_transaction_service.dart';
+export 'partner_payment_service.dart';

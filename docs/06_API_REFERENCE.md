@@ -522,31 +522,70 @@ class UseTokenResponse {
 }
 ```
 
-### TopupTransaction
-
-```dart
-class TopupTransaction {
-  final String id;
-  final String licenseKey;
-  final int tokenCount;
-  final int amount;
-  final String paymentMethod;
-  final String status;
-  final VirtualAccountInfo? virtualAccount;
-  final String? qrisUrl;
-  final DateTime? expiresAt;
-  final DateTime? paidAt;
-  final DateTime createdAt;
-}
-```
-
 ### TopupResponse
 
 ```dart
 class TopupResponse {
-  final String message;
-  final TopupTransaction transaction;
-  final String? checkoutPageUrl;
+  final String transactionId;
+  final String licenseKey;
+  final int tokensRequested;
+  final double amountToPay;
+  final double pricePerToken;
+  final String status;
+  final String? paymentMethod;      // checkout_page, va_bri, qris, dll
+  final String? gatewayProvider;
+  final String? paymentUrl;          // For checkout_page
+  final VirtualAccountInfo? virtualAccount;  // For VA payments
+  final QRISInfo? qris;              // For QRIS payment
+  final String? gatewayTransactionId;
+  final DateTime? expiresAt;
+  
+  // Helper methods
+  bool get isCheckoutPage => paymentMethod == 'checkout_page';
+  bool get isVirtualAccount => virtualAccount != null;
+  bool get isQRIS => paymentMethod == 'qris' || qris != null;
+  String? get qrisImageUrl => qris?.qrImageUrl;
+}
+```
+
+### VirtualAccountInfo
+
+```dart
+class VirtualAccountInfo {
+  final String number;
+  final String name;
+  final String bank;
+}
+```
+
+### QRISInfo
+
+```dart
+class QRISInfo {
+  final String? qrString;     // QRIS string untuk generate QR
+  final String? qrImageUrl;   // URL gambar QR code
+}
+```
+
+### TransactionStatusResponse
+
+```dart
+class TransactionStatusResponse {
+  final String transactionId;
+  final String type;           // 'topup', 'license_purchase', 'license_rental'
+  final double amount;
+  final int? tokensAdded;      // Only for topup
+  final int? tokensRequested;  // Only for topup
+  final String? licenseKey;    // Only for license transactions
+  final String status;
+  final DateTime createdAt;
+  
+  // Helper methods
+  bool get isTopup => type == 'topup';
+  bool get isLicensePurchase => type == 'license_purchase';
+  bool get isLicenseRental => type == 'license_rental';
+  bool get isSuccess => status == 'SUCCESS' || status == 'success';
+  bool get isPending => status == 'PENDING' || status == 'pending';
 }
 ```
 
@@ -554,13 +593,11 @@ class TopupResponse {
 
 ```dart
 class PaymentMethodInfo {
-  final String code;
-  final String displayName;
-  final String category;
-  final int fee;
-  final String feeFormatted;
-  final int minAmount;
-  final int maxAmount;
+  final String id;          // checkout_page, va_bri, qris, dll
+  final String name;
+  final String? description;
+  final String type;        // 'checkout', 'va', atau 'qris'
+  final bool enabled;
 }
 ```
 
@@ -575,18 +612,56 @@ class ValidateLicenseResponse {
 }
 ```
 
-### LicenseTransaction
+### LicenseTransactionData
 
 ```dart
-class LicenseTransaction {
+class LicenseTransactionData {
   final String id;
   final String licenseKey;
-  final String type;  // 'buy' or 'rent'
+  final String type;       // 'license_purchase' or 'license_rental'
   final String status;
-  final int amount;
-  final String paymentMethod;
+  final double amount;
+  final String? paymentMethod;
   final DateTime? paidAt;
   final DateTime createdAt;
+}
+```
+
+### InitiatePaymentResponse
+
+```dart
+class InitiatePaymentResponse {
+  final String transactionId;
+  final String licenseKey;
+  final String type;
+  final double amount;
+  final String status;
+  final String paymentMethod;
+  final String? paymentUrl;          // For checkout_page
+  final VirtualAccountInfo? virtualAccount;  // For VA payments
+  final QRISPaymentInfo? qris;       // For QRIS payment
+  final BillingPeriod? billingPeriod;  // For subscription
+  final DateTime? expiresAt;
+}
+```
+
+### BillingPeriod
+
+```dart
+class BillingPeriod {
+  final DateTime startDate;
+  final DateTime endDate;
+  final int durationDays;
+}
+```
+
+### QRISPaymentInfo
+
+```dart
+class QRISPaymentInfo {
+  final String? qrCode;       // Base64 atau string QR
+  final String? qrContent;    // Content QRIS
+  final DateTime? expireAt;
 }
 ```
 
