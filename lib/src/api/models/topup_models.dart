@@ -5,6 +5,7 @@ class TopupTransaction {
   final String licenseKey;
   final double amount;
   final int tokensAdded;
+  final int bonusTokens;
   final String status;
   final String? paymentReference;
   final String? paymentMethod;
@@ -25,12 +26,16 @@ class TopupTransaction {
   final DateTime? expiresAt;
   final DateTime createdAt;
 
+  /// Total tokens (base + bonus)
+  int get totalTokens => tokensAdded + bonusTokens;
+
   TopupTransaction({
     required this.id,
     required this.userId,
     required this.licenseKey,
     required this.amount,
     required this.tokensAdded,
+    this.bonusTokens = 0,
     required this.status,
     this.paymentReference,
     this.paymentMethod,
@@ -54,6 +59,7 @@ class TopupTransaction {
       licenseKey: json['license_key'] as String,
       amount: ((json['amount'] as num?) ?? 0).toDouble(),
       tokensAdded: (json['tokens_added'] as int?) ?? 0,
+      bonusTokens: (json['bonus_tokens'] as int?) ?? 0,
       status: (json['status'] as String?) ?? 'pending',
       paymentReference: json['payment_reference'] as String?,
       paymentMethod: json['payment_method'] as String?,
@@ -78,6 +84,7 @@ class TopupTransaction {
       'license_key': licenseKey,
       'amount': amount,
       'tokens_added': tokensAdded,
+      'bonus_tokens': bonusTokens,
       'status': status,
       if (paymentReference != null) 'payment_reference': paymentReference,
       if (paymentMethod != null) 'payment_method': paymentMethod,
@@ -163,6 +170,8 @@ class TopupResponse {
   final String transactionId;
   final String licenseKey;
   final int tokensRequested;
+  final int bonusTokens;
+  final int totalTokens;
   final double amountToPay;
   final double pricePerToken;
   final String status;
@@ -178,6 +187,8 @@ class TopupResponse {
     required this.transactionId,
     required this.licenseKey,
     required this.tokensRequested,
+    this.bonusTokens = 0,
+    required this.totalTokens,
     required this.amountToPay,
     required this.pricePerToken,
     required this.status,
@@ -191,10 +202,14 @@ class TopupResponse {
   });
 
   factory TopupResponse.fromJson(Map<String, dynamic> json) {
+    final tokensRequested = (json['tokens_requested'] as int?) ?? 0;
+    final bonusTokens = (json['bonus_tokens'] as int?) ?? 0;
     return TopupResponse(
       transactionId: json['transaction_id'] as String,
       licenseKey: json['license_key'] as String,
-      tokensRequested: (json['tokens_requested'] as int?) ?? 0,
+      tokensRequested: tokensRequested,
+      bonusTokens: bonusTokens,
+      totalTokens: (json['total_tokens'] as int?) ?? (tokensRequested + bonusTokens),
       amountToPay: ((json['amount_to_pay'] as num?) ?? 0).toDouble(),
       pricePerToken: ((json['price_per_token'] as num?) ?? 0).toDouble(),
       status: (json['status'] as String?) ?? 'PENDING',
@@ -213,6 +228,8 @@ class TopupResponse {
       'transaction_id': transactionId,
       'license_key': licenseKey,
       'tokens_requested': tokensRequested,
+      'bonus_tokens': bonusTokens,
+      'total_tokens': totalTokens,
       'amount_to_pay': amountToPay,
       'price_per_token': pricePerToken,
       'status': status,
@@ -225,6 +242,9 @@ class TopupResponse {
       if (expiresAt != null) 'expires_at': expiresAt!.toIso8601String(),
     };
   }
+
+  /// Check if has bonus tokens
+  bool get hasBonus => bonusTokens > 0;
 
   /// Check if payment uses checkout page
   bool get isCheckoutPage => paymentMethod == 'checkout_page';
@@ -400,4 +420,59 @@ class SyncTransactionResponse {
 
   /// Check if payment is now successful
   bool get isNowSuccess => status == 'success' || status == 'SUCCESS';
+}
+
+/// Bonus tier configuration for token purchases
+class BonusTier {
+  /// Unique tier identifier
+  final String id;
+
+  /// Minimum tokens to qualify for this tier
+  final int minTokens;
+
+  /// Maximum tokens for this tier (null = unlimited)
+  final int? maxTokens;
+
+  /// Fixed bonus tokens to award
+  final int bonusTokens;
+
+  /// Bonus percentage (optional, for display)
+  final double? bonusPercentage;
+
+  BonusTier({required this.id, required this.minTokens, this.maxTokens, required this.bonusTokens, this.bonusPercentage});
+
+  factory BonusTier.fromJson(Map<String, dynamic> json) {
+    return BonusTier(
+      id: (json['id'] as String?) ?? '',
+      minTokens: (json['min_tokens'] as int?) ?? 0,
+      maxTokens: json['max_tokens'] as int?,
+      bonusTokens: (json['bonus_tokens'] as int?) ?? 0,
+      bonusPercentage: (json['bonus_percentage'] as num?)?.toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'min_tokens': minTokens,
+      if (maxTokens != null) 'max_tokens': maxTokens,
+      'bonus_tokens': bonusTokens,
+      if (bonusPercentage != null) 'bonus_percentage': bonusPercentage,
+    };
+  }
+
+  /// Format token range for display
+  String get tokenRangeDisplay {
+    if (maxTokens == null) {
+      return '$minTokens+';
+    }
+    return '$minTokens - $maxTokens';
+  }
+
+  /// Check if a token count qualifies for this tier
+  bool qualifiesFor(int tokenCount) {
+    if (tokenCount < minTokens) return false;
+    if (maxTokens != null && tokenCount > maxTokens!) return false;
+    return true;
+  }
 }

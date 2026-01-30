@@ -209,4 +209,44 @@ class KgitonTopupService {
 
     return response.data!;
   }
+
+  /// Get bonus token tiers
+  ///
+  /// Returns the current bonus tier configuration from the server.
+  /// Tiers are managed by Super Admin and can change over time.
+  ///
+  /// Returns list of [BonusTier] with min/max tokens and bonus amounts
+  ///
+  /// Example:
+  /// ```dart
+  /// final tiers = await topupService.getBonusTiers();
+  /// for (final tier in tiers) {
+  ///   print('${tier.tokenRangeDisplay}: +${tier.bonusTokens} bonus');
+  /// }
+  ///
+  /// // Calculate bonus for 1500 tokens
+  /// final tier = tiers.firstWhere(
+  ///   (t) => t.qualifiesFor(1500),
+  ///   orElse: () => BonusTier(id: '', minTokens: 0, bonusTokens: 0),
+  /// );
+  /// print('Bonus for 1500 tokens: +${tier.bonusTokens}');
+  /// ```
+  Future<List<BonusTier>> getBonusTiers() async {
+    final response = await _client.get<List<BonusTier>>(
+      KgitonApiEndpoints.bonusTiers,
+      requiresAuth: false,
+      fromJsonT: (json) {
+        if (json is List) {
+          return json.map((e) => BonusTier.fromJson(e as Map<String, dynamic>)).toList();
+        }
+        throw KgitonApiException(message: 'Invalid response format for bonus tiers');
+      },
+    );
+
+    if (!response.success) {
+      throw KgitonApiException(message: 'Failed to get bonus tiers: ${response.message}');
+    }
+
+    return response.data ?? [];
+  }
 }

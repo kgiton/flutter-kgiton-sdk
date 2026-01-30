@@ -6,6 +6,20 @@ Panduan lengkap untuk melakukan top-up token dengan berbagai metode pembayaran.
 
 ## 📋 Overview
 
+### 🎁 Bonus Token Tiers
+
+Setiap pembelian token akan mendapatkan bonus berdasarkan jumlah yang dibeli:
+
+| Token Range | Bonus Tokens |
+|-------------|-------------|
+| 100 - 499 | 0 |
+| 500 - 999 | +25 |
+| 1,000 - 4,999 | +100 |
+| 5,000 - 9,999 | +750 |
+| 10,000+ | +2,000 |
+
+**Contoh:** Beli 1,000 token → Dapat 1,000 + 100 bonus = **1,100 total tokens**
+
 ### Metode Pembayaran yang Didukung
 
 | Method | Code | Description |
@@ -86,12 +100,15 @@ Future<void> topupWithCheckoutPage({
     );
     
     print('✅ Top-up request berhasil');
-    print('Transaction ID: ${response.transaction.id}');
-    print('Amount: Rp ${response.transaction.amount}');
-    print('Expires at: ${response.transaction.expiresAt}');
+    print('Transaction ID: ${response.transactionId}');
+    print('Tokens Requested: ${response.tokensRequested}');
+    print('Bonus Tokens: ${response.bonusTokens}');       // Bonus based on tier
+    print('Total Tokens: ${response.totalTokens}');       // tokensRequested + bonusTokens
+    print('Amount: Rp ${response.amountToPay}');
+    print('Expires at: ${response.expiresAt}');
     
     // Buka URL pembayaran
-    final paymentUrl = response.checkoutPageUrl!;
+    final paymentUrl = response.paymentUrl!;
     await launchUrl(Uri.parse(paymentUrl));
     
   } on KgitonApiException catch (e) {

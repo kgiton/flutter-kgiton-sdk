@@ -128,6 +128,10 @@ class KgitonApiEndpoints {
   /// POST /api/topup/sync/{transaction_id}
   static String syncTransactionStatus(String transactionId) => '/topup/sync/$transactionId';
 
+  /// Get bonus token tiers
+  /// GET /api/topup/bonus-tiers
+  static const String bonusTiers = '/topup/bonus-tiers';
+
   // ============================================================================
   // PARTNER PAYMENT ENDPOINTS
   // ============================================================================
