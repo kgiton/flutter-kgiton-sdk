@@ -412,3 +412,151 @@ class AssignLicenseRequest {
     return {'license_key': licenseKey};
   }
 }
+
+/// Token usage statistics response
+class TokenUsageStats {
+  final List<int> weeklyUsage;
+  final List<String> weeklyLabels;
+  final int totalThisWeek;
+  final int avgDailyUsage;
+  final int estDaysRemaining;
+
+  TokenUsageStats({
+    required this.weeklyUsage,
+    required this.weeklyLabels,
+    required this.totalThisWeek,
+    required this.avgDailyUsage,
+    required this.estDaysRemaining,
+  });
+
+  factory TokenUsageStats.fromJson(Map<String, dynamic> json) {
+    return TokenUsageStats(
+      weeklyUsage: (json['weekly_usage'] as List?)?.cast<int>() ?? [],
+      weeklyLabels: (json['weekly_labels'] as List?)?.cast<String>() ?? [],
+      totalThisWeek: (json['total_this_week'] as int?) ?? 0,
+      avgDailyUsage: (json['avg_daily_usage'] as int?) ?? 0,
+      estDaysRemaining: (json['est_days_remaining'] as int?) ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'weekly_usage': weeklyUsage,
+      'weekly_labels': weeklyLabels,
+      'total_this_week': totalThisWeek,
+      'avg_daily_usage': avgDailyUsage,
+      'est_days_remaining': estDaysRemaining,
+    };
+  }
+}
+
+/// Single token usage record
+class TokenUsageRecord {
+  final String id;
+  final int tokensUsed;
+  final int previousBalance;
+  final int newBalance;
+  final String purpose;
+  final Map<String, dynamic>? metadata;
+  final DateTime createdAt;
+
+  TokenUsageRecord({
+    required this.id,
+    required this.tokensUsed,
+    required this.previousBalance,
+    required this.newBalance,
+    required this.purpose,
+    this.metadata,
+    required this.createdAt,
+  });
+
+  factory TokenUsageRecord.fromJson(Map<String, dynamic> json) {
+    return TokenUsageRecord(
+      id: json['id'] as String,
+      tokensUsed: (json['tokens_used'] as int?) ?? 1,
+      previousBalance: (json['previous_balance'] as int?) ?? 0,
+      newBalance: (json['new_balance'] as int?) ?? 0,
+      purpose: (json['purpose'] as String?) ?? '',
+      metadata: json['metadata'] as Map<String, dynamic>?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'tokens_used': tokensUsed,
+      'previous_balance': previousBalance,
+      'new_balance': newBalance,
+      'purpose': purpose,
+      if (metadata != null) 'metadata': metadata,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+}
+
+/// Per-license token usage data
+class LicenseTokenUsage {
+  final String licenseKey;
+  final int currentBalance;
+  final int weeklyUsage;
+  final int avgDailyUsage;
+  final List<TokenUsageRecord> usageHistory;
+
+  LicenseTokenUsage({
+    required this.licenseKey,
+    required this.currentBalance,
+    required this.weeklyUsage,
+    required this.avgDailyUsage,
+    required this.usageHistory,
+  });
+
+  factory LicenseTokenUsage.fromJson(Map<String, dynamic> json) {
+    return LicenseTokenUsage(
+      licenseKey: json['license_key'] as String,
+      currentBalance: (json['current_balance'] as int?) ?? 0,
+      weeklyUsage: (json['weekly_usage'] as int?) ?? 0,
+      avgDailyUsage: (json['avg_daily_usage'] as int?) ?? 0,
+      usageHistory: (json['usage_history'] as List?)?.map((e) => TokenUsageRecord.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'license_key': licenseKey,
+      'current_balance': currentBalance,
+      'weekly_usage': weeklyUsage,
+      'avg_daily_usage': avgDailyUsage,
+      'usage_history': usageHistory.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+/// Per-license token usage response with pagination
+class LicenseTokenUsageResponse {
+  final LicenseTokenUsage data;
+  final int page;
+  final int limit;
+  final int total;
+  final int totalPages;
+
+  LicenseTokenUsageResponse({required this.data, required this.page, required this.limit, required this.total, required this.totalPages});
+
+  factory LicenseTokenUsageResponse.fromJson(Map<String, dynamic> json) {
+    final pagination = json['pagination'] as Map<String, dynamic>? ?? {};
+    return LicenseTokenUsageResponse(
+      data: LicenseTokenUsage.fromJson(json['data'] as Map<String, dynamic>),
+      page: (pagination['page'] as int?) ?? 1,
+      limit: (pagination['limit'] as int?) ?? 20,
+      total: (pagination['total'] as int?) ?? 0,
+      totalPages: (pagination['totalPages'] as int?) ?? 1,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'data': data.toJson(),
+      'pagination': {'page': page, 'limit': limit, 'total': total, 'totalPages': totalPages},
+    };
+  }
+}

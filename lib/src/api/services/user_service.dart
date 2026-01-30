@@ -164,4 +164,51 @@ class KgitonUserService {
     _client.setApiKey(null);
     await _client.saveConfiguration();
   }
+
+  /// Get token usage statistics
+  ///
+  /// Returns weekly usage data, average daily usage, and estimated days remaining
+  ///
+  /// Throws:
+  /// - [KgitonAuthenticationException] if not authenticated
+  /// - [KgitonApiException] for other errors
+  Future<TokenUsageStats> getTokenUsageStats() async {
+    final response = await _client.get<TokenUsageStats>(
+      KgitonApiEndpoints.tokenUsageStats,
+      requiresAuth: true,
+      fromJsonT: (json) => TokenUsageStats.fromJson(json as Map<String, dynamic>),
+    );
+
+    if (!response.success || response.data == null) {
+      throw KgitonApiException(message: 'Failed to get token usage stats: ${response.message}');
+    }
+
+    return response.data!;
+  }
+
+  /// Get per-license token usage details
+  ///
+  /// [licenseKey] - The license key to get usage for
+  /// [page] - Page number for pagination (default: 1)
+  /// [limit] - Items per page (default: 20)
+  ///
+  /// Returns [LicenseTokenUsageResponse] with usage history and stats
+  ///
+  /// Throws:
+  /// - [KgitonAuthenticationException] if not authenticated
+  /// - [KgitonNotFoundException] if license key not found
+  /// - [KgitonApiException] for other errors
+  Future<LicenseTokenUsageResponse> getLicenseTokenUsage(String licenseKey, {int page = 1, int limit = 20}) async {
+    final response = await _client.get<LicenseTokenUsageResponse>(
+      '${KgitonApiEndpoints.licenseUsage(licenseKey)}?page=$page&limit=$limit',
+      requiresAuth: true,
+      fromJsonT: (json) => LicenseTokenUsageResponse.fromJson(json as Map<String, dynamic>),
+    );
+
+    if (!response.success || response.data == null) {
+      throw KgitonApiException(message: 'Failed to get license token usage: ${response.message}');
+    }
+
+    return response.data!;
+  }
 }

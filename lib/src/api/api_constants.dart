@@ -88,6 +88,14 @@ class KgitonApiEndpoints {
   /// POST /api/user/revoke-api-key
   static const String revokeApiKey = '/user/revoke-api-key';
 
+  /// Get token usage stats (weekly usage, avg daily, etc)
+  /// GET /api/user/token-usage-stats
+  static const String tokenUsageStats = '/user/token-usage-stats';
+
+  /// Get per-license token usage details
+  /// GET /api/user/license/{licenseKey}/usage
+  static String licenseUsage(String licenseKey) => '/user/license/$licenseKey/usage';
+
   // ============================================================================
   // LICENSE ENDPOINTS (Public)
   // ============================================================================

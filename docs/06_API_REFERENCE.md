@@ -197,6 +197,34 @@ Future<UseTokenResponse> useToken(String licenseKey)
 
 ---
 
+### getTokenUsageStats()
+
+Get token usage statistics across all user's licenses.
+
+```dart
+Future<TokenUsageStats> getTokenUsageStats()
+```
+
+**Returns:** `TokenUsageStats` with weekly usage, average daily usage, and estimated days remaining.
+
+---
+
+### getLicenseTokenUsage()
+
+Get token usage history for a specific license.
+
+```dart
+Future<LicenseTokenUsageResponse> getLicenseTokenUsage(
+  String licenseKey, {
+  int page = 1,
+  int limit = 20,
+})
+```
+
+**Returns:** `LicenseTokenUsageResponse` with paginated usage records.
+
+---
+
 ### assignLicense()
 
 Assign additional license to user.
@@ -519,6 +547,51 @@ class UseTokenResponse {
   final String message;
   final int remainingBalance;
   final DateTime usedAt;
+}
+```
+
+### TokenUsageStats
+
+```dart
+class TokenUsageStats {
+  final int weeklyUsage;
+  final double avgDailyUsage;
+  final int? estimatedDaysRemaining;
+  final List<TokenUsageRecord> usageHistory;
+}
+```
+
+### TokenUsageRecord
+
+```dart
+class TokenUsageRecord {
+  final String date;
+  final int tokensUsed;
+}
+```
+
+### LicenseTokenUsageResponse
+
+```dart
+class LicenseTokenUsageResponse {
+  final String licenseKey;
+  final List<LicenseTokenUsage> records;
+  final int total;
+  final int page;
+  final int limit;
+  final int totalPages;
+}
+```
+
+### LicenseTokenUsage
+
+```dart
+class LicenseTokenUsage {
+  final String id;
+  final int tokensUsed;
+  final String? purpose;
+  final Map<String, dynamic>? metadata;
+  final DateTime createdAt;
 }
 ```
 

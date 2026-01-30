@@ -343,7 +343,98 @@ Timer.periodic(Duration(minutes: 5), (_) async {
 
 ---
 
-## 🔗 Next Steps
+## Token Usage Statistics
+
+### Get Token Usage Stats
+
+Dapatkan statistik penggunaan token (mingguan, rata-rata harian, estimasi sisa hari).
+
+```dart
+Future<void> getUsageStats() async {
+  final stats = await api.user.getTokenUsageStats();
+  
+  print('Weekly Usage: ${stats.weeklyUsage}');
+  print('Labels: ${stats.weeklyLabels}');
+  print('Total This Week: ${stats.totalThisWeek}');
+  print('Avg Daily Usage: ${stats.avgDailyUsage}');
+  print('Est Days Remaining: ${stats.estDaysRemaining}');
+}
+```
+
+**Response:**
+
+```dart
+class TokenUsageStats {
+  final List<int> weeklyUsage;      // [12, 19, 8, 15, 22, 10, 5]
+  final List<String> weeklyLabels;  // ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  final int totalThisWeek;          // Total minggu ini
+  final int avgDailyUsage;          // Rata-rata harian
+  final int estDaysRemaining;       // Estimasi hari tersisa
+}
+```
+
+---
+
+### Get Per-License Usage History
+
+Dapatkan riwayat penggunaan token untuk license tertentu.
+
+```dart
+Future<void> getLicenseUsage(String licenseKey) async {
+  final response = await api.user.getLicenseTokenUsage(
+    licenseKey,
+    page: 1,
+    limit: 20,
+  );
+  
+  print('License: ${response.data.licenseKey}');
+  print('Current Balance: ${response.data.currentBalance}');
+  print('Weekly Usage: ${response.data.weeklyUsage}');
+  print('Avg Daily: ${response.data.avgDailyUsage}');
+  
+  // Usage history
+  for (var record in response.data.usageHistory) {
+    print('${record.purpose}: -${record.tokensUsed} (${record.createdAt})');
+  }
+  
+  // Pagination
+  print('Page ${response.page} of ${response.totalPages}');
+}
+```
+
+**Response:**
+
+```dart
+class LicenseTokenUsageResponse {
+  final LicenseTokenUsage data;
+  final int page;
+  final int limit;
+  final int total;
+  final int totalPages;
+}
+
+class LicenseTokenUsage {
+  final String licenseKey;
+  final int currentBalance;
+  final int weeklyUsage;
+  final int avgDailyUsage;
+  final List<TokenUsageRecord> usageHistory;
+}
+
+class TokenUsageRecord {
+  final String id;
+  final int tokensUsed;
+  final int previousBalance;
+  final int newBalance;
+  final String purpose;
+  final Map<String, dynamic>? metadata;
+  final DateTime createdAt;
+}
+```
+
+---
+
+## Next Steps
 
 - [Top-up & Payment](04_TOPUP_PAYMENT.md) - Cara top-up token
 - [BLE Integration](05_BLE_INTEGRATION.md) - Koneksi ke timbangan

@@ -198,6 +198,27 @@ if (result.success) {
 }
 ```
 
+### 3.1 Token Usage Statistics
+
+```dart
+// Get usage statistics for all licenses
+final stats = await api.user.getTokenUsageStats();
+print('Weekly Usage: ${stats.weeklyUsage}');
+print('Avg Daily: ${stats.avgDailyUsage.toStringAsFixed(1)}');
+print('Est Days Remaining: ${stats.estimatedDaysRemaining ?? "∞"}');
+
+// Get per-license usage history
+final usage = await api.user.getLicenseTokenUsage(
+  'XXXX-XXXX-XXXX-XXXX',
+  page: 1,
+  limit: 20,
+);
+print('Total Records: ${usage.total}');
+for (var record in usage.records) {
+  print('${record.createdAt}: ${record.tokensUsed} tokens - ${record.purpose}');
+}
+```
+
 ### 4. Top-up Tokens
 
 ```dart
